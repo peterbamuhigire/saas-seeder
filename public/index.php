@@ -132,7 +132,7 @@ switch ($userType) {
                     <div class="mt-4">
                         <?php if ($userType === 'super_admin'): ?>
                             <!-- Super Admin Buttons -->
-                            <a href="./adminpanel/" class="btn btn-primary big-button mb-3 w-100">
+                            <a href="./adminpanel/" class="btn btn-primary big-button mb-2 w-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                     <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
@@ -140,7 +140,7 @@ switch ($userType) {
                                 </svg>
                                 Super Admin Panel
                             </a>
-                            <a href="./dashboard.php" class="btn btn-outline-primary big-button w-100">
+                            <a href="./dashboard.php" class="btn btn-outline-primary big-button mb-2 w-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                     <path d="M3 21l18 0" />
@@ -151,10 +151,20 @@ switch ($userType) {
                                 </svg>
                                 Franchise Dashboard
                             </a>
+                            <a href="./skeleton.php" class="btn btn-outline-secondary big-button w-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                    <path d="M9 17h6" />
+                                    <path d="M9 13h6" />
+                                </svg>
+                                Page Template (Skeleton)
+                            </a>
 
                         <?php elseif ($userType === 'owner' || $userType === 'staff'): ?>
-                            <!-- Franchise Admin Button -->
-                            <a href="./dashboard.php" class="btn btn-primary big-button w-100">
+                            <!-- Franchise Admin Buttons -->
+                            <a href="./dashboard.php" class="btn btn-primary big-button mb-2 w-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                     <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
@@ -162,6 +172,16 @@ switch ($userType) {
                                     <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
                                 </svg>
                                 Go to Dashboard
+                            </a>
+                            <a href="./skeleton.php" class="btn btn-outline-secondary big-button w-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                                    <path d="M9 17h6" />
+                                    <path d="M9 13h6" />
+                                </svg>
+                                Page Template (Skeleton)
                             </a>
 
                         <?php else: ?>

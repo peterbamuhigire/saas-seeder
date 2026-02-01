@@ -18,7 +18,52 @@ SaaS Seeder is a **ready-to-use template** that gives you:
 
 ---
 
-## 🚀 Quick Start
+## 📋 Starting a New Project
+
+**Before you begin,** prepare your project requirements and database schema:
+
+### 1. Create Project Requirements
+
+Create detailed specifications in `docs/project-requirements/`:
+
+```
+docs/project-requirements/
+├── requirements.md       # Feature requirements & specifications
+├── business-rules.md     # Business logic & validation rules
+├── user-types.md         # User roles and permissions
+└── workflows.md          # Key user workflows
+```
+
+### 2. Provide Database Schema
+
+Add your database schema to `database/schema/`:
+
+```
+database/schema/
+├── core-schema.sql       # Main database schema
+└── seed-data.sql         # Sample data (optional)
+```
+
+**Schema Requirements:**
+- All franchise-scoped tables MUST have `franchise_id` column
+- Use `utf8mb4_unicode_ci` collation
+- Include proper indexes with `franchise_id`
+
+### 3. AI Agent Setup
+
+When using Claude Code or similar AI agent:
+
+1. Agent reads requirements from `docs/project-requirements/`
+2. Agent reviews database schema from `database/schema/`
+3. Agent customizes template (session prefix, user types, branding)
+4. Agent updates documentation (README, CLAUDE.md)
+5. Agent applies project-specific database schema
+
+**See CLAUDE.md for complete project preparation workflow.**
+
+---
+
+## 🚀 Quick Start (Template Bootstrap)
 
 ### Prerequisites
 

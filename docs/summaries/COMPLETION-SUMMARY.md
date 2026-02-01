@@ -307,12 +307,12 @@ Update these files with real data:
 
 ### Documentation
 
-- `README.md` - Project overview
-- `docs/AUTHENTICATION-GUIDE.md` - Complete auth docs
+- `docs/overview/README.md` - Project overview and doc index
+- `docs/guides/AUTHENTICATION-GUIDE.md` - Complete auth docs
 - `docs/api/API-DOCUMENTATION.md` - API reference
 - `docs/reference/QUICK-REFERENCE.md` - Cheat sheet
-- `NEXT-STEPS.md` - Getting started
-- `SETUP-PROGRESS.md` - Implementation details
+- `docs/guides/NEXT-STEPS.md` - Getting started
+- `docs/operations/SETUP-PROGRESS.md` - Implementation details
 
 ---
 
