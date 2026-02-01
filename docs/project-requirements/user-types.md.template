@@ -1,0 +1,253 @@
+# User Types and Roles
+
+> **Instructions:** Replace this template with your actual user types and role definitions.
+
+## Overview
+
+This document defines all user types, their roles, permissions, and access levels for [Project Name].
+
+---
+
+## User Type Hierarchy
+
+```
+super_admin (Platform-wide access)
+    ↓
+owner (Franchise owner)
+    ↓
+staff (Franchise staff with permissions)
+    ↓
+[custom_type_1] (End users - e.g., students, customers)
+[custom_type_2]
+```
+
+---
+
+## User Type Definitions
+
+### super_admin
+
+**Description:** Platform operators who manage multiple franchises
+
+**franchise_id:** Can be NULL (access to all franchises)
+
+**Capabilities:**
+- Manage all franchises
+- Create/suspend franchises
+- View cross-franchise analytics
+- Impersonate franchise users (with audit trail)
+- Configure platform settings
+
+**Access:** All three panels (admin, franchise, member)
+
+---
+
+### owner
+
+**Description:** Franchise owner with full control over their franchise
+
+**franchise_id:** REQUIRED (specific franchise)
+
+**Capabilities:**
+- Full access to franchise data
+- Manage franchise staff and users
+- Configure franchise settings
+- View all reports and analytics
+- Manage subscriptions and billing
+
+**Access:** Franchise admin panel, member panel
+
+---
+
+### staff
+
+**Description:** Franchise employees with role-based permissions
+
+**franchise_id:** REQUIRED (specific franchise)
+
+**Capabilities:**
+- Depends on assigned role(s)
+- Limited by RBAC permissions
+- Cannot modify franchise settings
+- Cannot manage billing
+
+**Access:** Franchise admin panel (permission-restricted)
+
+---
+
+## Example: School Management SaaS
+
+### teacher
+
+**Description:** School teachers who manage classes and grades
+
+**franchise_id:** REQUIRED (specific school)
+
+**Capabilities:**
+- View assigned classes and students
+- Enter and modify grades for assigned subjects
+- Mark attendance
+- Generate class reports
+- Communicate with students/parents
+- View academic calendar
+
+**Permissions Required:**
+- `STUDENT_VIEW` - View student profiles
+- `GRADE_CREATE` - Enter grades
+- `GRADE_EDIT` - Modify grades (own subjects only)
+- `ATTENDANCE_MARK` - Mark attendance
+- `REPORT_GENERATE` - Generate class reports
+
+**Access:** Franchise admin panel (limited views)
+
+---
+
+### student
+
+**Description:** Students enrolled in the school
+
+**franchise_id:** REQUIRED (specific school)
+
+**Capabilities:**
+- View own profile and grades
+- View class schedule and assignments
+- Access learning materials
+- Submit assignments
+- View attendance record
+- Communicate with teachers
+
+**Permissions Required:**
+- `OWN_PROFILE_VIEW` - View own profile
+- `OWN_GRADES_VIEW` - View own grades
+- `ASSIGNMENT_SUBMIT` - Submit assignments
+
+**Access:** Member panel (student portal)
+
+---
+
+### parent
+
+**Description:** Parent/guardian of enrolled students
+
+**franchise_id:** REQUIRED (specific school)
+
+**Capabilities:**
+- View children's profiles
+- View children's grades and attendance
+- Communicate with teachers
+- Pay fees online
+- Receive notifications about children
+
+**Permissions Required:**
+- `CHILD_PROFILE_VIEW` - View linked children's profiles
+- `CHILD_GRADES_VIEW` - View children's grades
+- `FEE_PAY` - Make fee payments
+
+**Access:** Member panel (parent portal)
+
+**Special Fields:**
+- `linked_students` - Array of student IDs (children)
+
+---
+
+### principal
+
+**Description:** School principal with administrative oversight
+
+**franchise_id:** REQUIRED (specific school)
+
+**Capabilities:**
+- All capabilities of owner for academic operations
+- Manage teachers and staff
+- Approve enrollments
+- View all academic reports
+- Configure academic calendar
+- Cannot modify billing/subscription
+
+**Permissions Required:**
+- All academic permissions
+- `USER_MANAGE` - Manage teachers/staff
+- `ENROLLMENT_APPROVE` - Approve enrollments
+
+**Access:** Franchise admin panel (full academic access)
+
+---
+
+## Database Schema Updates
+
+**To add custom user types, modify the enum:**
+
+```sql
+ALTER TABLE tbl_users MODIFY user_type ENUM(
+  'super_admin',
+  'owner',
+  'staff',
+  'teacher',      -- Custom type 1
+  'student',      -- Custom type 2
+  'parent',       -- Custom type 3
+  'principal'     -- Custom type 4
+) NOT NULL DEFAULT 'staff';
+```
+
+---
+
+## Panel Access Matrix
+
+| User Type | Admin Panel | Franchise Panel | Member Panel |
+|-----------|-------------|-----------------|--------------|
+| super_admin | ✅ Full Access | ✅ Full Access | ✅ Full Access |
+| owner | ❌ No Access | ✅ Full Access | ✅ View Only |
+| staff | ❌ No Access | ✅ Permission-based | ✅ Permission-based |
+| teacher | ❌ No Access | ✅ Limited Views | ❌ No Access |
+| principal | ❌ No Access | ✅ Academic Full | ❌ No Access |
+| student | ❌ No Access | ❌ No Access | ✅ Own Data Only |
+| parent | ❌ No Access | ❌ No Access | ✅ Children's Data |
+
+---
+
+## Registration Workflows
+
+### Teacher Registration
+
+1. Owner/principal creates teacher account
+2. Assigns teacher to subjects and classes
+3. Teacher receives email with login credentials
+4. Teacher logs in and sets password
+5. Access: Franchise panel with teacher permissions
+
+### Student Registration
+
+1. Owner/staff enrolls student with details
+2. System generates student registration number
+3. Student receives login credentials (email/SMS)
+4. Parent account linked automatically
+5. Access: Member panel (student portal)
+
+### Parent Registration
+
+1. Automatically created during student enrollment
+2. Linked to student(s) via `linked_students` field
+3. Receives separate login credentials
+4. Can view/manage multiple children
+5. Access: Member panel (parent portal)
+
+---
+
+## Permission Groups
+
+### Academic Staff Permissions
+- `STUDENT_VIEW`, `STUDENT_CREATE`, `STUDENT_EDIT`
+- `GRADE_VIEW`, `GRADE_CREATE`, `GRADE_EDIT`
+- `ATTENDANCE_MARK`, `ATTENDANCE_VIEW`
+- `REPORT_GENERATE`
+
+### Administrative Permissions
+- `USER_MANAGE`
+- `FRANCHISE_SETTINGS`
+- `BILLING_VIEW`, `BILLING_MANAGE`
+- `ROLE_ASSIGN`
+
+### End User Permissions
+- `OWN_PROFILE_VIEW`, `OWN_PROFILE_EDIT`
+- `OWN_GRADES_VIEW`
+- `ASSIGNMENT_SUBMIT`, `ASSIGNMENT_VIEW`

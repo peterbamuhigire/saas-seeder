@@ -1,0 +1,148 @@
+# Project Requirements
+
+> **Instructions:** Replace this template with your actual project requirements.
+> This file should contain detailed feature specifications for your SaaS project.
+
+## Project Overview
+
+**Project Name:** [Your SaaS Name]
+**Domain:** [School Management / Restaurant / Medical / E-commerce / etc.]
+**Target Users:** [List primary user types]
+**Launch Date:** [Target date]
+
+## Core Features
+
+### 1. [Feature Name]
+
+**Description:** [Brief description of the feature]
+
+**User Stories:**
+- As a [user type], I want to [action] so that [benefit]
+- As a [user type], I want to [action] so that [benefit]
+
+**Acceptance Criteria:**
+- [ ] [Specific requirement 1]
+- [ ] [Specific requirement 2]
+- [ ] [Specific requirement 3]
+
+**Priority:** High / Medium / Low
+
+---
+
+### 2. [Feature Name]
+
+**Description:** [Brief description of the feature]
+
+**User Stories:**
+- As a [user type], I want to [action] so that [benefit]
+
+**Acceptance Criteria:**
+- [ ] [Specific requirement 1]
+- [ ] [Specific requirement 2]
+
+**Priority:** High / Medium / Low
+
+---
+
+## Example: School Management SaaS
+
+### 1. Student Enrollment
+
+**Description:** System to enroll students in the school with complete profile information
+
+**User Stories:**
+- As a school admin, I want to enroll new students so that they can access the system
+- As a parent, I want to view my child's enrollment status online
+
+**Acceptance Criteria:**
+- [ ] Collect student personal information (name, DOB, gender, address)
+- [ ] Assign student to a class/grade
+- [ ] Generate unique student registration number
+- [ ] Upload student photo
+- [ ] Record parent/guardian contact information
+- [ ] Send enrollment confirmation email
+- [ ] Support bulk enrollment via CSV
+
+**Priority:** High
+
+### 2. Grade Management
+
+**Description:** Teachers can record and manage student grades for subjects
+
+**User Stories:**
+- As a teacher, I want to enter grades for my students so that they can track progress
+- As a student, I want to view my grades online
+
+**Acceptance Criteria:**
+- [ ] Teachers can enter grades by subject and term
+- [ ] Support for multiple grading systems (percentage, letter grades, GPA)
+- [ ] Automatic GPA calculation
+- [ ] Grade reports printable as PDF
+- [ ] Parents can view their child's grades
+- [ ] Prevent grade modification after term is closed
+
+**Priority:** High
+
+### 3. Attendance Tracking
+
+**Description:** Daily attendance recording for students
+
+**User Stories:**
+- As a teacher, I want to mark daily attendance quickly
+- As a parent, I want to receive alerts when my child is absent
+
+**Acceptance Criteria:**
+- [ ] Mark students as present/absent/late
+- [ ] Bulk marking (e.g., "mark all present")
+- [ ] Attendance reports by student, class, or date range
+- [ ] SMS/email alerts for absences
+- [ ] Attendance percentage calculation
+- [ ] Integration with timetable
+
+**Priority:** Medium
+
+---
+
+## Non-Functional Requirements
+
+### Performance
+- Page load time < 2 seconds
+- Support 1000 concurrent users
+- API response time < 500ms
+
+### Security
+- Multi-tenant data isolation (franchise_id filtering)
+- RBAC with granular permissions
+- Session timeout after 30 minutes
+- Audit trail for all data modifications
+
+### Scalability
+- Support up to 100 franchises
+- Support up to 10,000 students per franchise
+- Cloud-ready architecture
+
+### Usability
+- Mobile-responsive design
+- Support for offline data entry (sync later)
+- Multi-language support (English, French, Swahili)
+
+---
+
+## Future Enhancements (Phase 2)
+
+- [ ] Mobile apps (iOS/Android)
+- [ ] Biometric attendance
+- [ ] Fee management and invoicing
+- [ ] Library management
+- [ ] Transport management
+- [ ] SMS gateway integration
+
+---
+
+## Technical Constraints
+
+- Must use SaaS Seeder Template as base
+- MySQL 8.0+ database
+- PHP 8.0+
+- Bootstrap 5 UI
+- Multi-tenant architecture required

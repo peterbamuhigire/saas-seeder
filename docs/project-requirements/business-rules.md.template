@@ -1,0 +1,227 @@
+# Business Rules
+
+> **Instructions:** Replace this template with your actual business rules and validation logic.
+
+## Overview
+
+This document defines business logic, validation rules, calculations, and state machines for [Project Name].
+
+---
+
+## Validation Rules
+
+### [Entity Name] Validation
+
+**Field Validations:**
+- `field_name`: [Validation rule - e.g., "Required, max 100 characters"]
+- `email`: [Validation rule - e.g., "Required, valid email format, unique"]
+- `age`: [Validation rule - e.g., "Required, integer, min 5, max 100"]
+
+**Business Constraints:**
+- [Constraint description - e.g., "Student age must be at least 5 years for enrollment"]
+- [Constraint description]
+
+---
+
+## Calculations
+
+### [Calculation Name]
+
+**Formula:** [Mathematical formula or algorithm]
+
+**Example:**
+```
+Input: [Example values]
+Calculation: [Step-by-step calculation]
+Output: [Result]
+```
+
+---
+
+## State Machines
+
+### [Entity] Status Flow
+
+```
+[INITIAL STATE] → [NEXT STATE] → [FINAL STATE]
+```
+
+**Valid Transitions:**
+- `initial_state` → `next_state`: [Condition/trigger]
+- `next_state` → `final_state`: [Condition/trigger]
+
+**Invalid Transitions:**
+- `final_state` → `initial_state`: [Why not allowed]
+
+---
+
+## Example: School Management SaaS
+
+## Validation Rules
+
+### Student Enrollment Validation
+
+**Field Validations:**
+- `first_name`: Required, max 50 characters, letters only
+- `last_name`: Required, max 50 characters, letters only
+- `date_of_birth`: Required, date format YYYY-MM-DD, must be at least 5 years old
+- `email`: Optional, valid email format, unique within franchise
+- `registration_number`: Auto-generated, unique within franchise
+- `class_id`: Required, must exist in tbl_classes for same franchise
+
+**Business Constraints:**
+- Student must be at least 5 years old for enrollment
+- Cannot enroll more than 50 students per class
+- Parent/guardian contact required for students under 18
+- At least one emergency contact required
+
+### Grade Entry Validation
+
+**Field Validations:**
+- `score`: Required, numeric, min 0, max 100
+- `subject_id`: Required, must exist in student's enrolled subjects
+- `term_id`: Required, term must be active
+- `teacher_id`: Required, teacher must teach this subject
+
+**Business Constraints:**
+- Cannot modify grades after term is closed
+- Teacher can only enter grades for subjects they teach
+- At least 3 assessments required before final grade
+
+---
+
+## Calculations
+
+### GPA Calculation
+
+**Formula:** Sum of (grade points × credit hours) ÷ total credit hours
+
+**Grade Points Scale:**
+- A (90-100): 4.0
+- B (80-89): 3.0
+- C (70-79): 2.0
+- D (60-69): 1.0
+- F (0-59): 0.0
+
+**Example:**
+```
+Subject 1: Grade B (3.0), Credits 4 → 3.0 × 4 = 12
+Subject 2: Grade A (4.0), Credits 3 → 4.0 × 3 = 12
+Subject 3: Grade B (3.0), Credits 3 → 3.0 × 3 = 9
+
+GPA = (12 + 12 + 9) ÷ (4 + 3 + 3) = 33 ÷ 10 = 3.3
+```
+
+### Attendance Percentage
+
+**Formula:** (Present days ÷ Total school days) × 100
+
+**Example:**
+```
+Present: 85 days
+Absent: 10 days
+Late: 5 days (counted as present)
+Total school days: 100
+
+Attendance % = ((85 + 5) ÷ 100) × 100 = 90%
+```
+
+---
+
+## State Machines
+
+### Student Enrollment Status
+
+```
+PENDING → ACTIVE → GRADUATED
+   ↓         ↓
+REJECTED  SUSPENDED
+```
+
+**Valid Transitions:**
+- `PENDING` → `ACTIVE`: After enrollment approval and fee payment
+- `PENDING` → `REJECTED`: If enrollment is denied
+- `ACTIVE` → `SUSPENDED`: Disciplinary action or fee arrears
+- `SUSPENDED` → `ACTIVE`: After suspension period or payment
+- `ACTIVE` → `GRADUATED`: At end of final year with passing grades
+
+**Invalid Transitions:**
+- `GRADUATED` → `ACTIVE`: Cannot reactivate graduated students
+- `REJECTED` → `ACTIVE`: Must create new enrollment
+
+### Term/Semester Status
+
+```
+UPCOMING → ACTIVE → CLOSED → ARCHIVED
+```
+
+**Valid Transitions:**
+- `UPCOMING` → `ACTIVE`: On term start date
+- `ACTIVE` → `CLOSED`: On term end date, after all grades submitted
+- `CLOSED` → `ARCHIVED`: After 2 years for historical records
+
+**Business Rules:**
+- Only ONE term can be `ACTIVE` at a time per franchise
+- Cannot modify data in `CLOSED` or `ARCHIVED` terms
+- Grades cannot be entered for `UPCOMING` terms
+
+---
+
+## Fee Calculation Rules
+
+### Tuition Fee Calculation
+
+**Base Rules:**
+- Day school: $500/term
+- Boarding: $1000/term
+- Sibling discount: 10% for 2nd child, 15% for 3rd+ child
+- Early payment discount: 5% if paid 2 weeks before term start
+
+**Example:**
+```
+Family with 3 children (all day school):
+Child 1: $500 (full price)
+Child 2: $450 ($500 - 10% sibling discount)
+Child 3: $425 ($500 - 15% sibling discount)
+
+If paid early:
+Child 1: $475 ($500 - 5% early discount)
+Child 2: $427.50 ($450 - 5%)
+Child 3: $403.75 ($425 - 5%)
+
+Total: $1,306.25
+```
+
+---
+
+## Access Control Rules
+
+### Grade Visibility
+
+**Teachers:**
+- Can view grades for subjects they teach
+- Can view grades for students in their homeroom class
+- Cannot view other teachers' subjects
+
+**Students:**
+- Can view only their own grades
+- Cannot view grades before official release date
+
+**Parents:**
+- Can view grades for their own children only
+- Access via parent portal with separate login
+
+**Admins (owners/staff):**
+- Can view all grades within their franchise
+- Can override grade visibility dates
+
+---
+
+## Data Retention Rules
+
+- Active student records: Retained indefinitely
+- Graduated students: 10 years
+- Deleted/rejected enrollments: 2 years
+- Audit logs: 7 years (compliance requirement)
+- Session logs: 90 days
+- Grade history: Permanent (cannot delete)

@@ -1,0 +1,369 @@
+# Key Workflows
+
+> **Instructions:** Replace this template with your actual user workflows and processes.
+
+## Overview
+
+This document defines step-by-step workflows for key user journeys in [Project Name].
+
+---
+
+## Workflow Template
+
+### [Workflow Name]
+
+**Actors:** [Who performs this workflow]
+**Trigger:** [What initiates this workflow]
+**Preconditions:** [What must be true before starting]
+**Postconditions:** [System state after completion]
+
+**Steps:**
+1. [Actor] [Action]
+   - **System Response:** [What happens]
+   - **Data Collected:** [Fields/information gathered]
+
+2. [Actor] [Action]
+   - **System Response:** [What happens]
+
+**Alternative Flows:**
+- **Alt 1:** [Condition] → [Alternative steps]
+- **Alt 2:** [Condition] → [Alternative steps]
+
+**Error Scenarios:**
+- **Error 1:** [Condition] → [Error handling]
+- **Error 2:** [Condition] → [Error handling]
+
+---
+
+## Example: School Management SaaS
+
+### Student Enrollment Workflow
+
+**Actors:** School Administrator (owner/staff), Parent, System
+**Trigger:** New student wants to enroll in the school
+**Preconditions:**
+- Admin has appropriate permissions (`STUDENT_CREATE`)
+- School has available capacity
+- Academic year/term is defined
+
+**Postconditions:**
+- Student record created with status `PENDING`
+- Parent account created and linked
+- Enrollment notification sent
+- Student added to waitlist or assigned to class
+
+**Steps:**
+
+1. Admin clicks "Enroll New Student" button
+   - **System Response:** Displays enrollment form
+   - **Data Collected:** None yet
+
+2. Admin enters student personal information
+   - **Data Collected:**
+     - First name, last name, middle name
+     - Date of birth, gender
+     - Home address, phone number
+     - Email address (optional)
+   - **System Response:** Validates input, shows next section
+
+3. Admin enters parent/guardian information
+   - **Data Collected:**
+     - Parent first name, last name
+     - Relationship to student
+     - Phone number (required), email (required)
+     - Occupation (optional)
+   - **System Response:** Checks if parent account exists, creates if new
+
+4. Admin uploads student photo and documents
+   - **Data Collected:**
+     - Student photo (JPG/PNG)
+     - Birth certificate (PDF) - optional
+     - Medical records (PDF) - optional
+   - **System Response:** Validates file types and sizes, stores uploads
+
+5. Admin selects class/grade and term
+   - **Data Collected:**
+     - Academic year
+     - Grade level
+     - Class section (if applicable)
+     - Boarding status (day/boarding)
+   - **System Response:** Checks class capacity, shows fee structure
+
+6. System generates student registration number
+   - **System Response:** Creates unique number format: `YYYY-NNNN` (e.g., 2026-0001)
+   - **Data Saved:** Registration number assigned to student
+
+7. Admin reviews enrollment summary and submits
+   - **System Response:**
+     - Creates student record with status `PENDING`
+     - Creates parent account with login credentials
+     - Sends enrollment confirmation email to parent
+     - Sends SMS with student registration number
+     - Adds student to fee payment queue
+
+**Alternative Flows:**
+
+**Alt 1: Class is Full**
+- Step 5 → System detects class at capacity
+- Admin can either:
+  - Add student to waitlist
+  - Select different class
+  - Create new class section
+- Workflow continues with selected option
+
+**Alt 2: Parent Account Already Exists**
+- Step 3 → System detects parent email/phone exists
+- Admin can link to existing parent account
+- Skip parent account creation step
+
+**Alt 3: Bulk Enrollment**
+- Admin uploads CSV file with multiple students
+- System validates each row
+- Creates students in batch
+- Sends summary report with successes/failures
+
+**Error Scenarios:**
+
+**Error 1: Duplicate Registration**
+- **Condition:** Student with same name + DOB already exists
+- **Handling:**
+  - System shows warning with existing student details
+  - Admin can confirm if different student or cancel
+  - Log duplicate attempt for audit
+
+**Error 2: Invalid Email/Phone**
+- **Condition:** Parent email or phone validation fails
+- **Handling:**
+  - Highlight invalid field with error message
+  - Prevent form submission until fixed
+  - Show example format
+
+**Error 3: Upload Failure**
+- **Condition:** File too large or invalid format
+- **Handling:**
+  - Show error message with requirements
+  - Allow re-upload without losing other form data
+  - Max size: 5MB per file
+
+---
+
+### Grade Submission Workflow
+
+**Actors:** Teacher, System
+**Trigger:** Teacher wants to enter grades for students
+**Preconditions:**
+- Teacher has `GRADE_CREATE` permission
+- Term is `ACTIVE` status
+- Teacher is assigned to the subject
+- Students are enrolled in the class
+
+**Postconditions:**
+- Grades recorded in database
+- Students can view grades (if released)
+- Parents notified (if configured)
+- GPA updated automatically
+
+**Steps:**
+
+1. Teacher navigates to Grade Entry page
+   - **System Response:** Shows list of assigned subjects
+
+2. Teacher selects subject, class, and assessment type
+   - **Data Collected:**
+     - Subject (e.g., Mathematics)
+     - Class (e.g., Form 1A)
+     - Assessment type (Quiz, Midterm, Final)
+     - Term
+   - **System Response:** Displays list of enrolled students
+
+3. Teacher enters grades for each student
+   - **Data Collected:**
+     - Student ID
+     - Score (0-100)
+     - Comments (optional)
+   - **System Response:**
+     - Validates score is numeric and in range
+     - Highlights invalid entries
+     - Shows grade letter equivalent (A/B/C/D/F)
+
+4. Teacher reviews entered grades
+   - **System Response:** Shows summary statistics:
+     - Highest score, lowest score, average
+     - Grade distribution chart
+
+5. Teacher submits grades
+   - **System Response:**
+     - Saves all grades with timestamp
+     - Calculates GPA for each student
+     - Creates audit log entry
+     - Sends notification if configured
+
+6. System optionally releases grades to students
+   - **System Response:**
+     - If auto-release enabled → Students can view immediately
+     - If manual release → Admin must approve first
+     - Sends email/SMS notification to students/parents
+
+**Alternative Flows:**
+
+**Alt 1: Bulk Grade Import**
+- Teacher uploads CSV with student numbers and scores
+- System validates and imports
+- Shows preview before saving
+
+**Alt 2: Grade Modification**
+- Teacher edits previously entered grade
+- System checks if term is still `ACTIVE`
+- Creates audit trail of old vs new value
+- Requires justification comment
+
+**Error Scenarios:**
+
+**Error 1: Term Closed**
+- **Condition:** Term status changed to `CLOSED` during entry
+- **Handling:**
+  - Prevent grade submission
+  - Show warning message
+  - Suggest contacting admin to reopen term
+
+**Error 2: Invalid Score**
+- **Condition:** Score outside 0-100 range or non-numeric
+- **Handling:**
+  - Highlight field in red
+  - Show error message
+  - Prevent row submission
+
+---
+
+### Fee Payment Workflow
+
+**Actors:** Parent, Cashier (staff), Payment Gateway, System
+**Trigger:** Parent wants to pay school fees
+**Preconditions:**
+- Student enrolled and active
+- Fee structure defined for student
+- Payment gateway configured (if online)
+
+**Postconditions:**
+- Payment recorded in system
+- Receipt generated
+- Student account updated
+- Parent notified
+
+**Steps:**
+
+1. Parent views fee statement
+   - **System Response:**
+     - Shows total fees due
+     - Shows previous payments
+     - Shows outstanding balance
+     - Shows due date
+
+2. Parent selects payment method
+   - **Options:**
+     - Online (Credit Card, Mobile Money, Bank Transfer)
+     - Cash (at school office)
+   - **System Response:** Shows appropriate payment interface
+
+3a. **Online Payment:**
+   3a.1. Parent enters payment details
+      - **Data Collected:** Amount, payment method details
+      - **System Response:** Validates amount ≥ minimum payment
+
+   3a.2. System initiates payment via gateway
+      - **System Response:** Redirects to payment provider
+      - **Gateway Response:** Processes payment
+
+   3a.3. Parent completes payment on gateway
+      - **Gateway Response:** Success/failure status
+      - **System Response:** Updates payment status
+
+3b. **Cash Payment:**
+   3b.1. Parent pays cash to cashier
+      - **Cashier Action:** Receives payment, issues receipt
+      - **Data Collected:** Amount, date, receipt number
+
+   3b.2. Cashier records payment in system
+      - **Data Collected:** Payment details, reference number
+      - **System Response:** Updates student account
+
+4. System generates receipt
+   - **System Response:**
+     - Creates receipt with unique number
+     - Shows payment details, date, amount
+     - Updates balance
+     - Available as PDF download/print
+
+5. System sends confirmation
+   - **System Response:**
+     - Sends email with receipt PDF
+     - Sends SMS confirmation
+     - Updates dashboard to show payment status
+
+**Alternative Flows:**
+
+**Alt 1: Partial Payment**
+- Parent pays less than full amount
+- System records partial payment
+- Updates outstanding balance
+- Sends reminder for remaining amount
+
+**Alt 2: Early Payment Discount**
+- Parent pays before discount deadline
+- System automatically applies discount
+- Shows savings on receipt
+
+**Error Scenarios:**
+
+**Error 1: Payment Gateway Failure**
+- **Condition:** Gateway timeout or error
+- **Handling:**
+  - Mark payment as `PENDING`
+  - Send notification to admin
+  - Allow retry after 5 minutes
+  - Webhook updates status when processed
+
+**Error 2: Insufficient Amount**
+- **Condition:** Amount less than minimum payment
+- **Handling:**
+  - Show error with minimum required
+  - Prevent payment submission
+  - Suggest available payment plans
+
+---
+
+## Workflow Diagrams (Optional)
+
+For complex workflows, include visual flowcharts:
+
+```
+[Start] → [Action 1] → [Decision]
+                           ↓          ↓
+                     [Path A]    [Path B]
+                           ↓          ↓
+                        [Action 2] [Action 3]
+                           ↓          ↓
+                          [End]    [End]
+```
+
+---
+
+## Integration Points
+
+### Email Notifications
+- Student enrollment confirmation
+- Grade release notification
+- Payment receipts
+- Password reset
+
+### SMS Notifications
+- Registration number delivery
+- Attendance alerts
+- Fee payment reminders
+- Emergency alerts
+
+### External Systems
+- Payment gateway (e.g., Stripe, Flutterwave)
+- Email service (e.g., SendGrid, Mailgun)
+- SMS gateway (e.g., Twilio, Africa's Talking)
+- Document storage (e.g., AWS S3, local filesystem)
