@@ -79,22 +79,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($result->getStatus() == 'SUCCESS') {
             // Regenerate session ID for security
-            session_regenerate_id(true);
+            regenerateSession();
 
-            // Set session data
-            $_SESSION['user_id'] = $result->getUserId();
-            $_SESSION['franchise_id'] = $result->getFranchiseId();
-            $_SESSION['username'] = $result->getUsername();
-            $_SESSION['user_type'] = $result->getUserData()['user_type'] ?? 'staff';
-            $_SESSION['auth_token'] = $result->getToken();
-            $_SESSION['last_activity'] = time();
+            // Set session data with prefix
+            setSession('user_id', $result->getUserId());
+            setSession('franchise_id', $result->getFranchiseId());
+            setSession('username', $result->getUsername());
+            setSession('user_type', $result->getUserData()['user_type'] ?? 'staff');
+            setSession('auth_token', $result->getToken());
+            setSession('last_activity', time());
 
             // Set additional session variables
-            $_SESSION['franchise_country'] = $result->getUserData()['country'] ?? '';
-            $_SESSION['franchise_name'] = $result->getUserData()['franchise_name'] ?? '';
-            $_SESSION['currency'] = $result->getUserData()['currency'] ?? '';
-            $_SESSION['full_name'] = $result->getUserData()['full_name'] ?? $result->getUsername();
-            $_SESSION['role_name'] = $result->getUserData()['role_name'] ?? ucfirst(str_replace('_', ' ', $result->getUserData()['user_type'] ?? 'staff'));
+            setSession('franchise_country', $result->getUserData()['country'] ?? '');
+            setSession('franchise_name', $result->getUserData()['franchise_name'] ?? '');
+            setSession('currency', $result->getUserData()['currency'] ?? '');
+            setSession('full_name', $result->getUserData()['full_name'] ?? $result->getUsername());
+            setSession('role_name', $result->getUserData()['role_name'] ?? ucfirst(str_replace('_', ' ', $result->getUserData()['user_type'] ?? 'staff')));
 
             // Handle remember me
             if ($rememberMe) {
@@ -109,7 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Redirect based on user type
-            if ($_SESSION['user_type'] === 'super_admin' || $_SESSION['user_type'] === 'owner') {
+            $userType = getSession('user_type');
+            if ($userType === 'super_admin' || $userType === 'owner') {
                 header('Location: ./adminpanel/');
             } else {
                 header('Location: ./memberpanel/');

@@ -2,21 +2,21 @@
 // Auth configuration for SaaS Seeder Template
 require_once dirname(__FILE__) . '/database.php';
 require_once dirname(__FILE__) . '/autoloader.php';
+require_once dirname(__FILE__) . '/session.php';
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Initialize session with secure settings
+initSession();
 
 function isLoggedIn(): bool {
-    if (isset($_SESSION['user_id']) && isset($_SESSION['last_activity'])) {
-        $timeout = time() - $_SESSION['last_activity'];
+    if (hasSession('user_id') && hasSession('last_activity')) {
+        $timeout = time() - getSession('last_activity');
 
         if ($timeout < 1800) {
-            $_SESSION['last_activity'] = time();
+            setSession('last_activity', time());
             return true;
         }
         error_log("Session expired - clearing session");
-        session_unset();
+        clearPrefixedSession();
         session_destroy();
     }
     return false;
@@ -25,7 +25,7 @@ function isLoggedIn(): bool {
 function requireAuth() {
     if (!isLoggedIn()) {
         // Store intended destination
-        $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'];
+        setSession('redirect_after_login', $_SERVER['REQUEST_URI']);
 
         // Determine correct path to sign-in based on current location
         $scriptPath = $_SERVER['SCRIPT_NAME'];
@@ -44,7 +44,7 @@ function requireAuth() {
 
 function requireGuest() {
     if (isLoggedIn()) {
-        $userType = $_SESSION['user_type'] ?? '';
+        $userType = getSession('user_type', '');
 
         if ($userType === 'super_admin' || $userType === 'owner') {
             header('Location: ./adminpanel/');
@@ -57,24 +57,24 @@ function requireGuest() {
 
 function checkAuth() {
     // Check if user is logged in
-    if (!isset($_SESSION['user_id'])) {
+    if (!hasSession('user_id')) {
         header('Location: ./sign-in.php');
         exit();
     }
 
     // Check if session is expired
-    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 1800)) {
-        session_unset();
+    if (hasSession('last_activity') && (time() - getSession('last_activity') > 1800)) {
+        clearPrefixedSession();
         session_destroy();
         header('Location: ./sign-in.php?msg=session_expired');
         exit();
     }
 
-    $_SESSION['last_activity'] = time();
+    setSession('last_activity', time());
 }
 
 function logout() {
-    session_unset();
+    clearPrefixedSession();
     session_destroy();
     header('Location: ./sign-in.php');
     exit();
@@ -90,11 +90,11 @@ function logout() {
  */
 function hasPermissionGlobal(string $permissionCode, ?int $franchiseId = null): bool {
     if (!isLoggedIn()) return false;
-    if ($franchiseId === null) $franchiseId = (int)($_SESSION['franchise_id'] ?? 0);
+    if ($franchiseId === null) $franchiseId = (int)(getSession('franchise_id') ?? 0);
     $db = (new App\Config\Database())->getConnection();
     $permSvc = new App\Auth\PermissionService($db);
     try {
-        return $permSvc->hasPermission((int)$_SESSION['user_id'], (int)$franchiseId, $permissionCode);
+        return $permSvc->hasPermission((int)getSession('user_id'), (int)$franchiseId, $permissionCode);
     } catch (Exception $e) {
         error_log('Permission check error: ' . $e->getMessage());
         return false;
@@ -113,11 +113,11 @@ function requirePermissionGlobal(string $permissionCode, ?int $franchiseId = nul
         header('Location: ./sign-in.php');
         exit();
     }
-    if ($franchiseId === null) $franchiseId = (int)($_SESSION['franchise_id'] ?? 0);
+    if ($franchiseId === null) $franchiseId = (int)(getSession('franchise_id') ?? 0);
     $db = (new App\Config\Database())->getConnection();
     $permSvc = new App\Auth\PermissionService($db);
     try {
-        $permSvc->requirePermission((int)$_SESSION['user_id'], (int)$franchiseId, $permissionCode);
+        $permSvc->requirePermission((int)getSession('user_id'), (int)$franchiseId, $permissionCode);
     } catch (Exception $e) {
         // Check if this is an API/AJAX request
         $isApiRequest = (
@@ -158,7 +158,7 @@ function requirePermissionGlobal(string $permissionCode, ?int $franchiseId = nul
 // This block runs on every page load where auth.php is included
 if (isLoggedIn()) {
     $currentScript = $_SERVER['PHP_SELF'];
-    $userType = $_SESSION['user_type'] ?? '';
+    $userType = getSession('user_type') ?? '';
 
     // Normalize path separators
     $currentScript = str_replace('\\', '/', $currentScript);

@@ -126,27 +126,32 @@ class AuthService
         // Generate token (use franchise_id 1 as default for super admins who have null franchise_id)
         $token = $this->tokenService->generateToken($result['user_id'], $userData['franchise_id'] ?? 1);
 
-        // Set session data
-        $_SESSION['user_id'] = $result['user_id'];
-        $_SESSION['franchise_id'] = $userData['franchise_id'];
-        $_SESSION['username'] = $userData['username'];
-        $_SESSION['user_type'] = $userData['user_type'] ?? 'staff';  // ✅ Add user_type for API permission checks
-        $_SESSION['full_name'] = trim($userData['first_name'] . ' ' . $userData['last_name']);
-        $_SESSION['role_name'] = $userData['roles'][0] ?? 'User';
-        $_SESSION['auth_token'] = $token;
-        $_SESSION['last_activity'] = time();
-        $_SESSION['franchise_name'] = $userData['franchise_name'];
-        $_SESSION['currency'] = $userData['currency'];
-        $_SESSION['franchise_code'] = $userData['franchise_code'];
-        $_SESSION['franchise_country'] = $userData['country'] ?? '';
-        $_SESSION['franchise_language'] = $userData['language'] ?? 'en';
-        $_SESSION['language'] = $_SESSION['franchise_language']; // Set active language
-        $_SESSION['timezone'] = $userData['timezone'] ?? 'Africa/Kampala';
-        $_SESSION['force_password_change'] = $userData['force_password_change'] ?? 0;
+        // Initialize session helpers (required for prefixed session functions)
+        if (!defined('SESSION_PREFIX')) {
+            require_once dirname(__FILE__) . '/../../config/session.php';
+        }
+
+        // Set session data using session prefix helpers
+        setSession('user_id', $result['user_id']);
+        setSession('franchise_id', $userData['franchise_id']);
+        setSession('username', $userData['username']);
+        setSession('user_type', $userData['user_type'] ?? 'staff');
+        setSession('full_name', trim($userData['first_name'] . ' ' . $userData['last_name']));
+        setSession('role_name', $userData['roles'][0] ?? 'User');
+        setSession('auth_token', $token);
+        setSession('last_activity', time());
+        setSession('franchise_name', $userData['franchise_name']);
+        setSession('currency', $userData['currency']);
+        setSession('franchise_code', $userData['franchise_code']);
+        setSession('franchise_country', $userData['country'] ?? '');
+        setSession('franchise_language', $userData['language'] ?? 'en');
+        setSession('language', getSession('franchise_language')); // Set active language
+        setSession('timezone', $userData['timezone'] ?? 'Africa/Kampala');
+        setSession('force_password_change', $userData['force_password_change'] ?? 0);
 
         // Set application-wide timezone for this session
         // This affects all PHP date/time functions throughout the application
-        date_default_timezone_set($_SESSION['timezone']);
+        date_default_timezone_set(getSession('timezone'));
 
         // Reset failed attempts
         $this->resetFailedAttempts($result['user_id']);
