@@ -19,9 +19,6 @@ $dotenv->required([
     'APP_ENV'
 ])->notEmpty();
 
-// Redirect if already logged in
-requireGuest();
-
 // Initialize CSRF helper
 $csrfHelper = new CSRFHelper();
 $csrfToken = $csrfHelper->generateToken();
@@ -29,6 +26,12 @@ $csrfToken = $csrfHelper->generateToken();
 // Initialize error and success messages
 $error = '';
 $success = '';
+$loginSuccess = false;
+
+// Redirect if already logged in (but not on POST - we're processing login)
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    requireGuest();
+}
 
 // Check for URL parameters
 if (isset($_GET['msg'])) {
@@ -108,14 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit();
             }
 
-            // Redirect based on user type
-            $userType = getSession('user_type');
-            if ($userType === 'super_admin' || $userType === 'owner') {
-                header('Location: ./adminpanel/');
-            } else {
-                header('Location: ./memberpanel/');
-            }
-            exit();
+            // Success! Show SweetAlert and redirect
+            $userName = $result->getUserData()['full_name'] ?? $result->getUsername();
+            $loginSuccess = true;
         } else {
             // Map error codes to user-friendly messages
             $errorMessages = [
@@ -152,12 +150,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="./assets/tabler/css/tabler-payments.min.css" rel="stylesheet" />
     <link href="./assets/tabler/css/tabler-vendors.min.css" rel="stylesheet" />
     <!-- END PLUGINS STYLES -->
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
     <style>
       @import url("https://rsms.me/inter/inter.css");
     </style>
   </head>
   <body>
     <script src="./assets/tabler/js/tabler.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (isset($loginSuccess) && $loginSuccess === true): ?>
+    <!-- Login Success - Show SweetAlert and Redirect -->
+    <div class="page page-center">
+      <div class="container container-tight py-4">
+        <div class="text-center mb-4">
+          <a href="." aria-label="SaaS Seeder" class="navbar-brand navbar-brand-autodark">
+            <h1 class="text-primary">SaaS Seeder</h1>
+          </a>
+        </div>
+        <div class="card card-md">
+          <div class="card-body text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <h3>Login Successful!</h3>
+            <p class="text-muted">Redirecting to dashboard...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Show SweetAlert immediately on page load
+      Swal.fire({
+        icon: 'success',
+        title: 'Welcome Back!',
+        html: '<p>Login successful!</p><p>Welcome, <strong><?php echo htmlspecialchars($userName ?? 'User'); ?></strong>!</p>',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      }).then(() => {
+        window.location.href = './index.php';
+      });
+    </script>
+
+    <?php else: ?>
+    <!-- Login Form -->
     <div class="page page-center">
       <div class="container container-tight py-4">
         <div class="text-center mb-4">
@@ -249,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="text-center text-muted mt-3">
-          <small>Default credentials: <strong>root</strong> / <strong>password</strong></small>
+          <small>Use super-user-dev.php to create your first admin account</small>
         </div>
       </div>
     </div>
@@ -267,5 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         passwordField.setAttribute('type', type);
       });
     </script>
+
+    <?php endif; ?>
   </body>
 </html>

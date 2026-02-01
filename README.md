@@ -78,8 +78,15 @@ saas-seeder/
 │   ├── logout.php           # Logout functionality
 │   ├── forgot-password.php  # Password recovery
 │   ├── access-denied.php    # Access denied page
-│   ├── adminpanel/          # Admin dashboard (super_admin, owner)
-│   ├── memberpanel/         # Member dashboard (staff, others)
+│   ├── dashboard.php        # 🏫 FRANCHISE ADMIN DASHBOARD (root)
+│   ├── skeleton.php         # Page template for franchise admin pages
+│   │
+│   ├── adminpanel/          # 🌐 SUPER ADMIN PANEL
+│   │   └── index.php        # System admin dashboard
+│   │
+│   ├── memberpanel/         # 👤 END USER PANEL
+│   │   └── index.php        # Member/student/customer dashboard
+│   │
 │   ├── assets/              # Shared CSS, JS, images
 │   └── uploads/             # File uploads
 │
@@ -136,18 +143,35 @@ saas-seeder/
 - **Stored Procedures:** Database-level auth logic for consistency
 - **Role-Based Access Control:** Automatic routing and panel protection
 
-### User Types & Routing
+### Three-Tier Panel Structure
 
-| User Type | Login Redirect | Panel Access |
-|-----------|----------------|--------------|
-| `super_admin` | `/adminpanel/` | Admin + Member panels |
-| `owner` | `/adminpanel/` | Admin + Member panels |
-| `staff` | `/memberpanel/` | Member panel only |
-| Others | `/memberpanel/` | Member panel only |
+**IMPORTANT:** This template uses a three-tier architecture:
 
-**Auto-routing enforcement:**
-- Non-admins trying to access `/adminpanel/` → Redirected to `/memberpanel/`
-- Admins can access both panels
+1. **`/adminpanel/`** - Super Admin System
+   - Manage multiple franchises/schools/organizations
+   - System-wide settings and billing
+
+2. **`/public/` (root)** - Franchise Admin Panel
+   - Manage your franchise/school/restaurant
+   - School principals, restaurant managers work here
+
+3. **`/memberpanel/`** - End User Portal
+   - Students, customers, patients access here
+   - Self-service portal for end users
+
+| User Type | Login Redirect | Primary Workspace | Example Role |
+|-----------|----------------|-------------------|--------------|
+| `super_admin` | `/adminpanel/` | System admin | SaaS operator |
+| `owner` | `/dashboard.php` | Franchise admin (public/ root) | School principal |
+| `staff` | `/dashboard.php` | Franchise admin (public/ root) | School admin staff |
+| `member`/others | `/memberpanel/` | End user portal | Students/Customers |
+
+**Access Rules:**
+- Super admins can access ALL three tiers
+- Franchise admins (owner/staff) can access public/ and memberpanel
+- End users can ONLY access memberpanel
+
+**See:** `docs/PANEL-STRUCTURE.md` for detailed architecture guide
 
 ---
 

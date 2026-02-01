@@ -17,7 +17,12 @@ define('SESSION_PREFIX', 'saas_app_');
 function initSession(): void {
     if (session_status() === PHP_SESSION_NONE) {
         ini_set('session.cookie_httponly', '1');
-        ini_set('session.cookie_secure', '1');
+
+        // Only set secure cookie if using HTTPS (allows localhost HTTP development)
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+                   || $_SERVER['SERVER_PORT'] == 443;
+        ini_set('session.cookie_secure', $isHttps ? '1' : '0');
+
         ini_set('session.cookie_samesite', 'Strict');
         ini_set('session.gc_maxlifetime', '1800'); // 30 minutes
         session_start();

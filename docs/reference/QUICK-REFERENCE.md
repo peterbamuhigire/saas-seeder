@@ -7,10 +7,10 @@
 composer install
 
 # 2. Setup database (PowerShell)
-.\setup-database.ps1
+.\scripts\setup\setup-database.ps1
 
-# 3. Start server
-php -S localhost:8000 -t public/
+# 3. Start development server
+.\scripts\server\start-server.ps1
 ```
 
 **Default Login:** `root` / `password`
@@ -21,18 +21,35 @@ php -S localhost:8000 -t public/
 
 ```
 saas-seeder/
+├── docs/
+│   ├── overview/        # Landing docs and workflows
+│   ├── api/             # API reference (API-DOCUMENTATION.md)
+│   ├── guides/          # Guides like NEXT-STEPS and AUTHENTICATION-GUIDE
+│   ├── reference/       # Quick reference + cheat sheets
+│   ├── operations/      # Setup progress, runbooks
+│   ├── implementation/  # Feature implementation notes (session prefix etc.)
+│   ├── summaries/        # Status & fix summaries
+│   ├── data/            # Data governance (AGENTS, schema notes)
+│   ├── agents/          # Documentation policies + AGENTS landing
+│   └── plans/           # Spec-driven plans + AGENTS
+├── scripts/
+│   ├── setup/           # install-dependencies.ps1, setup-database.ps1
+│   ├── db/              # fix-database.ps1, seed.ps1
+│   ├── server/          # start-server.ps1
+│   └── utils/           # dir_map.ps1
 ├── public/              # Web root (Apache/Nginx points here)
-│   ├── sign-in.php     # Login page
-│   ├── logout.php      # Logout
-│   ├── adminpanel/     # Admin dashboard
-│   └── memberpanel/    # Member dashboard
+│   ├── sign-in.php      # Login page (needs backend logic)
+│   ├── logout.php       # Logout functionality
+│   ├── adminpanel/      # Admin panel (super_admin, owner)
+│   └── memberpanel/     # Member panel (staff + others)
 ├── src/
-│   ├── config/         # Configuration
-│   └── Auth/           # Authentication module
-├── api/                # RESTful API
-├── docs/               # Documentation
-├── .env                # Environment variables
-└── composer.json       # Dependencies
+│   ├── config/          # Database + auth configs
+│   └── Auth/            # Services, helpers, middleware
+├── api/                 # RESTful API outside public/
+├── seeder-template/     # Migration + copy login files
+├── .env                 # Environment overrides
+├── composer.json        # PHP dependencies
+└── README.md            # Points into docs/overview
 ```
 
 ---
@@ -40,6 +57,7 @@ saas-seeder/
 ## 🔐 Common Auth Functions
 
 ### Check if user is logged in
+
 ```php
 if (isLoggedIn()) {
     // User is authenticated
@@ -47,16 +65,19 @@ if (isLoggedIn()) {
 ```
 
 ### Require authentication
+
 ```php
 requireAuth(); // Redirects to sign-in if not logged in
 ```
 
 ### Require guest (redirect if logged in)
+
 ```php
 requireGuest(); // Redirects to dashboard if already logged in
 ```
 
 ### Check permission
+
 ```php
 if (hasPermissionGlobal('INVOICE_CREATE')) {
     // User has permission
@@ -64,11 +85,13 @@ if (hasPermissionGlobal('INVOICE_CREATE')) {
 ```
 
 ### Require permission
+
 ```php
 requirePermissionGlobal('INVOICE_DELETE'); // Throws exception if denied
 ```
 
 ### Manual logout
+
 ```php
 logout(); // Clears session and redirects
 ```
@@ -92,11 +115,13 @@ $_SESSION['last_activity']     // Timestamp for timeout
 ## 🗄️ Database Tables
 
 ### Authentication
+
 - `tbl_users` - User accounts
 - `tbl_user_sessions` - Active sessions
 - `tbl_login_attempts` - Failed login tracking
 
 ### RBAC (Permissions)
+
 - `tbl_permissions` - Permission definitions
 - `tbl_global_roles` - Role definitions
 - `tbl_global_role_permissions` - Role-permission mapping
@@ -128,30 +153,35 @@ JWT_SECRET_KEY=auto-generated
 ## 🛠️ Common SQL Queries
 
 ### Create new user
+
 ```sql
 INSERT INTO tbl_users (username, email, password_hash, first_name, last_name, user_type, status, franchise_id)
 VALUES ('johndoe', 'john@example.com', '$2y$10$...', 'John', 'Doe', 'staff', 'active', 1);
 ```
 
 ### Add permission
+
 ```sql
 INSERT INTO tbl_permissions (name, code, module, description)
 VALUES ('View Reports', 'REPORT_VIEW', 'REPORTS', 'Access report dashboard');
 ```
 
 ### Create role
+
 ```sql
 INSERT INTO tbl_global_roles (code, name, description, is_system)
 VALUES ('MANAGER', 'Manager', 'Team manager role', 0);
 ```
 
 ### Assign role to user
+
 ```sql
 INSERT INTO tbl_user_roles (franchise_id, user_id, global_role_id, assigned_by)
 VALUES (1, 5, 2, 1);
 ```
 
 ### Assign permission to role
+
 ```sql
 INSERT INTO tbl_global_role_permissions (global_role_id, permission_id)
 VALUES (2, 10);
@@ -162,6 +192,7 @@ VALUES (2, 10);
 ## 📡 API Quick Reference
 
 ### Login
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -169,12 +200,14 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 ```
 
 ### Authenticated Request
+
 ```bash
 curl -X GET http://localhost:8000/api/v1/users/me \
   -H "Authorization: Bearer {token}"
 ```
 
 ### Logout
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/logout \
   -H "Authorization: Bearer {token}"
@@ -185,30 +218,37 @@ curl -X POST http://localhost:8000/api/v1/auth/logout \
 ## 🐞 Troubleshooting
 
 ### Class not found
+
 ```bash
 composer install
 ```
 
 ### Database connection failed
+
 - Check `.env` credentials
 - Verify MySQL is running
 - Test: `mysql -u root -p saas_seeder`
 
 ### Session expired
+
 - Default timeout: 30 minutes
 - Check `$_SESSION['last_activity']`
 - Clear browser cookies
 
 ### CSRF validation failed
+
 - Ensure session started before form
 - Check `<input type="hidden" name="csrf_token" value="...">`
 - Verify POST includes token
 
 ### Permission denied
+
 - Check user has required permission:
+
   ```sql
   CALL sp_get_user_permissions(user_id, franchise_id);
   ```
+
 - Verify role assignments in `tbl_user_roles`
 
 ---
@@ -216,18 +256,21 @@ composer install
 ## 🎨 UI Customization
 
 ### Update branding
+
 ```
 public/adminpanel/includes/head.php      # Admin header
 public/memberpanel/includes/head.php     # Member header
 ```
 
 ### Update navigation
+
 ```
 public/adminpanel/includes/menus/admin.php
 public/memberpanel/includes/menus/member.php
 ```
 
 ### Update styles
+
 ```
 public/assets/css/custom.css
 ```
@@ -274,11 +317,13 @@ public/assets/css/custom.css
 ## 🧪 Testing Login
 
 ### Web (Browser)
+
 1. Navigate to: `http://localhost:8000/sign-in.php`
 2. Enter: `root` / `password`
 3. Should redirect to: `http://localhost:8000/adminpanel/`
 
 ### API (cURL)
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -289,12 +334,18 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 
 ## 📚 Documentation Files
 
-- **README.md** - Project overview
-- **SETUP-PROGRESS.md** - Setup status report
-- **NEXT-STEPS.md** - Quick start guide
-- **AUTHENTICATION-GUIDE.md** - Complete auth system docs
-- **API-DOCUMENTATION.md** - API endpoint reference
-- **QUICK-REFERENCE.md** - This file
+- **docs/overview/README.md** - Central developer overview and doc index
+- **docs/operations/SETUP-PROGRESS.md** - Setup progress tracker
+- **docs/guides/NEXT-STEPS.md** - Quick start + next steps guide
+- **docs/guides/AUTHENTICATION-GUIDE.md** - In-depth authentication documentation
+- **docs/api/API-DOCUMENTATION.md** - API endpoint reference
+- **docs/reference/QUICK-REFERENCE.md** - This cheat sheet
+- **docs/summaries/COMPLETION-SUMMARY.md** - Completion snapshots
+- **docs/summaries/INTERFACE-FIX-SUMMARY.md** - UI fix log
+- **docs/implementation/*** - Implementation notes (session prefix etc.)
+- **docs/agents/AGENTS.md** - Documentation policy + instructions
+- **docs/data/AGENTS.md** - Data governance rules
+- **docs/plans/AGENTS.md** - Plan-driven workflow requirements
 
 ---
 

@@ -44,13 +44,8 @@ function requireAuth() {
 
 function requireGuest() {
     if (isLoggedIn()) {
-        $userType = getSession('user_type', '');
-
-        if ($userType === 'super_admin' || $userType === 'owner') {
-            header('Location: ./adminpanel/');
-        } else {
-            header('Location: ./memberpanel/');
-        }
+        // User is logged in, redirect to index.php which will route to appropriate panel
+        header('Location: ./index.php');
         exit();
     }
 }
@@ -178,6 +173,7 @@ if (isLoggedIn()) {
 
     // 1. Enforce Admin Panel Protection
     // Only Super Admin and Owner can access Admin Panel
+    // Staff/regular users trying to access adminpanel → redirect to memberpanel
     if ($isAdminPanel) {
         if ($userType !== 'super_admin' && $userType !== 'owner') {
             header("Location: {$redirectBase}memberpanel/");
@@ -185,11 +181,13 @@ if (isLoggedIn()) {
         }
     }
 
-    // 2. Enforce Member Panel Protection
-    // Staff and other user types can access member panel
+    // 2. Member Panel Access Rules
+    // IMPORTANT: Super admins and owners CAN access memberpanel
+    // They are allowed to view franchise-specific sections and data
+    // NO REDIRECT for super_admin/owner accessing memberpanel
+    // This allows them to manage franchises and view franchise-specific pages
     if ($isMemberPanel) {
-        if ($userType === 'super_admin' || $userType === 'owner') {
-            // Admins accessing member panel is allowed (they can see both)
-        }
+        // All user types can access member panel (including super_admin/owner)
+        // No restrictions needed here
     }
 }

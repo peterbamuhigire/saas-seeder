@@ -34,6 +34,8 @@ $csrfToken = $csrfHelper->generateToken();
 // Initialize error and success messages
 $error = '';
 $success = '';
+$createSuccess = false;
+$createdUsername = '';
 
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -95,10 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         if ($result) {
-            $success = "Super admin user created successfully! You can now login with username: <strong>" . htmlspecialchars($username) . "</strong>";
-
-            // Clear form fields on success
-            $_POST = [];
+            // Success! Set flag for SweetAlert
+            $createSuccess = true;
+            $createdUsername = $username;
         } else {
             throw new \Exception("Failed to create user");
         }
@@ -124,6 +125,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="./assets/tabler/css/tabler-payments.min.css" rel="stylesheet" />
     <link href="./assets/tabler/css/tabler-vendors.min.css" rel="stylesheet" />
     <!-- END PLUGINS STYLES -->
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
     <style>
       @import url("https://rsms.me/inter/inter.css");
       .dev-warning {
@@ -137,6 +140,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </head>
   <body>
     <script src="./assets/tabler/js/tabler.min.js"></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if ($createSuccess === true): ?>
+    <!-- Success - Show SweetAlert and Redirect -->
+    <div class="page page-center">
+      <div class="container container-tight py-4">
+        <div class="text-center mb-4">
+          <a href="." aria-label="SaaS Seeder" class="navbar-brand navbar-brand-autodark">
+            <h1 class="text-primary">SaaS Seeder</h1>
+          </a>
+          <div class="text-muted mt-2">Super Admin Development Tool</div>
+        </div>
+        <div class="card card-md">
+          <div class="card-body text-center">
+            <div class="spinner-border text-success mb-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <h3>Super Admin Created Successfully!</h3>
+            <p class="text-muted">Redirecting to login page...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      Swal.fire({
+        icon: 'success',
+        title: 'Account Created!',
+        html: '<p>Super admin user <strong><?php echo htmlspecialchars($createdUsername); ?></strong> has been created successfully!</p><p>You can now login with your credentials.</p>',
+        timer: 3000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      }).then(() => {
+        window.location.href = './index.php';
+      });
+    </script>
+
+    <?php else: ?>
+    <!-- Create User Form -->
     <div class="page page-center">
       <div class="container container-tight py-4">
         <div class="text-center mb-4">
@@ -305,5 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
       });
     </script>
+
+    <?php endif; ?>
   </body>
 </html>
