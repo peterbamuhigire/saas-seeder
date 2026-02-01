@@ -1,60 +1,242 @@
-# SaaS Template (Tabler)
+# SaaS Seeder Template
 
-This repository is a starter template for SaaS projects with Tabler UI.
+A production-ready authentication and RBAC system for kickstarting new web-based SaaS projects. Get from idea to working prototype in minutes, not days.
 
-## What this script did
+## 🎯 What is This?
 
-- Moved Tabler assets into public/assets/tabler
-- Removed demo HTML files (except index, sign-in, sign-up, forgot-password)
-- Converted those pages to PHP and moved them into public
-- Created shared includes and basic admin/member panel pages
+SaaS Seeder is a **ready-to-use template** that gives you:
 
-## Manual steps
+- ✅ **Complete authentication system** (session + JWT)
+- ✅ **Role-Based Access Control (RBAC)** with permissions
+- ✅ **Clean UI** powered by Tabler (admin + member panels)
+- ✅ **RESTful API** with authentication endpoints
+- ✅ **Security built-in** (CSRF, password hashing, session management)
+- ✅ **Database schema** with stored procedures
+- ✅ **Multi-tenant ready** (franchise-based isolation)
 
-1) Add API routing
-- Create public/.htaccess (or vhost rules) to route /api to api/index.php
+**Stop rebuilding the same auth system for every project.** Start here instead.
 
-Example rule:
-RewriteEngine On
-RewriteRule ^api/(.*)$ /api/index.php?path=$1 [QSA,L]
+---
 
-2) Build API front controller
-- Create api/index.php that reads the path and dispatches to endpoints
-- Keep API files under api/ (outside public)
+## 🚀 Quick Start
 
-3) Add auth
-- Create src/config/auth.php and enforce session checks on panel pages
-- Redirect to sign-in.php when not logged in
+### Prerequisites
 
-4) Create a seeder page template
-- Add public/_templates/seeder-page.php and clone it for new pages
+- PHP 8.0+
+- MySQL 8.0+
+- Composer
+- WAMP/XAMPP or similar (for local development)
 
-5) Update menus
-- Edit public/includes/menus/admin.php and public/includes/menus/member.php
+### Installation (3 Steps)
 
-6) Uploads and images
-- Use public/uploads for shared images (product images, avatars)
+```bash
+# 1. Install dependencies
+composer install
 
-7) Clean unused assets
-- Delete any unused libraries in public/assets/tabler/libs to keep the template lean
+# 2. Setup database (Windows PowerShell)
+.\setup-database.ps1
 
-8) Replace branding
-- Update page title, logos, and favicon in public/includes/head.php and public/assets
+# 3. Start PHP development server
+php -S localhost:8000 -t public/
+```
 
-## Recommended structure
+### Default Credentials
 
-public/
-  adminpanel/
-  memberpanel/
-  includes/
-  assets/
-  uploads/
+- **Username:** `root`
+- **Password:** `password`
 
-api/
-src/
+**⚠️ Change immediately after first login!**
 
-## Notes
+### Access
 
-- Keep UI pages in public/
-- Keep API outside public/
-- Use shared includes for both panels
+- **Login:** http://localhost:8000/sign-in.php
+- **Admin Panel:** http://localhost:8000/adminpanel/
+- **Member Panel:** http://localhost:8000/memberpanel/
+- **API:** http://localhost:8000/api/v1/
+
+---
+
+## 📁 Project Structure
+
+```
+saas-seeder/
+├── public/                   # Web root (DocumentRoot points here)
+│   ├── sign-in.php          # Login page (complete auth logic)
+│   ├── logout.php           # Logout functionality
+│   ├── forgot-password.php  # Password recovery
+│   ├── access-denied.php    # Access denied page
+│   ├── adminpanel/          # Admin dashboard (super_admin, owner)
+│   ├── memberpanel/         # Member dashboard (staff, others)
+│   ├── assets/              # Shared CSS, JS, images
+│   └── uploads/             # File uploads
+│
+├── src/
+│   ├── config/              # Configuration files
+│   │   ├── database.php     # Database connection
+│   │   ├── autoloader.php   # PSR-4 autoloader
+│   │   └── auth.php         # Auth functions & auto-routing
+│   │
+│   └── Auth/                # Authentication module
+│       ├── Services/        # AuthService, TokenService, PermissionService
+│       ├── Helpers/         # PasswordHelper, CSRFHelper, CookieHelper
+│       ├── DTO/             # LoginDTO, AuthResult, AuthDTO
+│       ├── Middleware/      # AuthMiddleware, PermissionMiddleware
+│       └── Models/          # User, Role, Permission models
+│
+├── api/                     # RESTful API (outside public/ for security)
+│   ├── bootstrap.php        # API initialization
+│   └── v1/
+│       ├── auth/            # Authentication endpoints
+│       │   ├── login.php
+│       │   ├── logout.php
+│       │   └── refresh.php
+│       └── public/          # Unauthenticated endpoints
+│
+├── docs/
+│   ├── seeder-template/
+│   │   ├── README.md        # Template guide
+│   │   ├── migration.sql    # Database schema
+│   │   └── copy-login-files.md
+│   ├── AUTHENTICATION-GUIDE.md  # Complete auth docs
+│   ├── API-DOCUMENTATION.md     # API reference
+│   └── QUICK-REFERENCE.md       # Cheat sheet
+│
+├── .env                     # Environment variables
+├── .env.example             # Environment template
+├── composer.json            # PHP dependencies
+├── setup-database.ps1       # Database setup script
+└── README.md                # This file
+```
+
+---
+
+## 🔐 Authentication System
+
+### Features
+
+- **Dual Authentication:** Session-based (web) + JWT (API)
+- **Password Security:** Bcrypt hashing with automatic salt
+- **Session Management:** 30-minute timeout, auto-regeneration
+- **CSRF Protection:** Token validation on all state-changing requests
+- **Remember Me:** 30-day persistent sessions
+- **Failed Login Tracking:** Automatic lockout after multiple failures
+- **Stored Procedures:** Database-level auth logic for consistency
+
+### User Types & Routing
+
+| User Type | Login Redirect | Panel Access |
+|-----------|----------------|--------------|
+| `super_admin` | `/adminpanel/` | Admin + Member panels |
+| `owner` | `/adminpanel/` | Admin + Member panels |
+| `staff` | `/memberpanel/` | Member panel only |
+| Others | `/memberpanel/` | Member panel only |
+
+**Auto-routing enforcement:**
+- Non-admins trying to access `/adminpanel/` → Redirected to `/memberpanel/`
+- Admins can access both panels
+
+---
+
+## 🛡️ RBAC (Permissions)
+
+### Permission Checking
+
+```php
+// Check permission (returns boolean)
+if (hasPermissionGlobal('INVOICE_CREATE')) {
+    // Show create button
+}
+
+// Require permission (throws exception if denied)
+requirePermissionGlobal('INVOICE_DELETE');
+// Code here only runs if permission granted
+```
+
+### Super Admin Bypass
+
+Users with `user_type = 'super_admin'` automatically have ALL permissions.
+
+---
+
+## 📚 Documentation
+
+- **[Quick Reference](docs/QUICK-REFERENCE.md)** - Cheat sheet
+- **[Authentication Guide](docs/AUTHENTICATION-GUIDE.md)** - Complete auth docs
+- **[API Documentation](docs/API-DOCUMENTATION.md)** - API reference
+- **[Setup Progress](SETUP-PROGRESS.md)** - Setup status
+- **[Next Steps](NEXT-STEPS.md)** - Getting started guide
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables (.env)
+
+```env
+# Database
+DB_HOST=localhost
+DB_NAME=saas_seeder
+DB_USER=root
+DB_PASSWORD=
+
+# Cookie Security
+COOKIE_DOMAIN=localhost
+COOKIE_ENCRYPTION_KEY=your-32-character-encryption-key
+
+# Application
+APP_ENV=development
+```
+
+---
+
+## 🔒 Security Checklist
+
+Before going live:
+
+- [ ] Change default `root` password
+- [ ] Update `COOKIE_ENCRYPTION_KEY` with random 32-char string
+- [ ] Set `APP_ENV=production` in `.env`
+- [ ] Enable HTTPS (SSL certificate)
+- [ ] Set file permissions (`.env` should be 600)
+- [ ] Implement rate limiting for API
+- [ ] Set up regular database backups
+
+---
+
+## 🐛 Troubleshooting
+
+### "Class not found" error
+```bash
+composer install
+```
+
+### Database connection failed
+- Check `.env` credentials
+- Verify MySQL is running
+- Test: `mysql -u root -p saas_seeder`
+
+### Session expired immediately
+- Check `session.gc_maxlifetime` in `php.ini`
+- Default timeout: 30 minutes
+
+### CSRF validation failed
+- Ensure session started before form rendering
+- Check form has CSRF token field
+
+---
+
+## 🤝 Contributing
+
+This is a template project. Fork it and customize for your needs!
+
+---
+
+## 📄 License
+
+MIT License - Feel free to use for personal or commercial projects.
+
+---
+
+**Built with ❤️ for rapid SaaS development**
+
+**Last Updated:** 2026-02-01

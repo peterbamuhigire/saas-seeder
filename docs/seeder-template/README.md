@@ -71,7 +71,7 @@ The login flow uses stored procedures to keep business logic close to the data a
 The migration script inserts a default super user:
 
 - Username: root
-- Email: peter@techguypeter.com
+- Email: <peter@techguypeter.com>
 - Password: password
 - user_type: super_admin
 - franchise_id: NULL
@@ -123,10 +123,52 @@ The template expects the first login to land on an empty dashboard with placehol
 After the first login works, the next steps are always the same:
 
 - Replace branding in the panel includes.
-- Update navigation menus to match your module plan.
+- Update navigation menus to match your module plan and menu rules.
 - Add your first business tables and APIs.
 - Build the real dashboard widgets.
 - Introduce real roles and permissions for your project.
+
+### Menu design rules (apply in all panels)
+
+- Minimalistic, easy on the eye.
+- Group items by job role so a user can find their work in one menu.
+- Max **5 submenus** per menu.
+- Max **6 items** per submenu.
+- If more items are needed, add **one** extra submenu level (no deeper).
+- Use Bootstrap Icons on **all** menu headings and entries (`bi-*`).
+- Prefer fewer pages by grouping related functions on a single page with permissioned sections/tabs/cards.
+
+### Sample module menus (dummy items)
+
+**Finance** `bi-cash-stack`
+
+- Overview `bi-speedometer2`: Summary, KPIs, Cash Position
+- Billing `bi-receipt`: Invoices, Credit Notes, Payments
+- Accounts `bi-journal-text`: AR, AP, Journals, Chart of Accounts
+- Treasury `bi-bank`: Bank Reconciliation, Transfers, Cashbook
+- Reports `bi-file-bar-graph`: P&L, Balance Sheet, Cash Flow, Taxes
+
+**HR & Payroll** `bi-people`
+
+- People `bi-person-badge`: Directory, Profiles, Documents
+- Attendance `bi-calendar-check`: Clocking, Shifts, Leave
+- Payroll `bi-cash-coin`: Pay Runs, Deductions, Benefits, Payslips
+- Compliance `bi-clipboard-check`: Taxes, Pension, Contracts
+
+**Stores & Inventory** `bi-box-seam`
+
+- Catalog `bi-boxes`: Items, Categories, Units
+- Stock `bi-stack`: On Hand, Adjustments, Transfers
+- Purchasing `bi-bag`: Requisitions, Purchase Orders, GRN
+- Warehousing `bi-house-gear`: Locations, Bin Cards, Pick/Pack
+- Reports `bi-file-bar-graph`: Valuation, Slow Movers, Stock Ledger
+
+**System Settings** `bi-gear`
+
+- Access Control `bi-shield-lock`: Roles, Permissions, Users
+- Organization `bi-building`: Company Profile, Branches, Departments
+- Integrations `bi-plug`: Email/SMS, Payments, API Keys
+- System `bi-sliders`: Preferences, Audit Logs, Backups
 
 ## Files in this directory
 
