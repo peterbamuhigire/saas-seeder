@@ -40,16 +40,28 @@ composer install
 php -S localhost:8000 -t public/
 ```
 
-### Default Credentials
+### Create Super Admin User
 
+After installation, create a super admin user using the development tool:
+
+1. Visit: http://localhost:8000/super-user-dev.php
+2. Fill in the form with your details
+3. Click "Create Super Admin"
+
+**⚠️ IMPORTANT:** The super-user-dev.php page uses the correct password hashing method (Argon2ID with salt and pepper) that matches the login system. Remove or restrict access to this file in production!
+
+### Default Credentials (Legacy)
+
+If you ran the migration script, these credentials may exist:
 - **Username:** `root`
 - **Password:** `password`
 
-**⚠️ Change immediately after first login!**
+**Note:** Due to password hashing changes, you should create a new super admin using super-user-dev.php instead.
 
 ### Access
 
 - **Login:** http://localhost:8000/sign-in.php
+- **Super User Creator (DEV):** http://localhost:8000/super-user-dev.php
 - **Admin Panel:** http://localhost:8000/adminpanel/
 - **Member Panel:** http://localhost:8000/memberpanel/
 - **API:** http://localhost:8000/api/v1/
@@ -62,6 +74,7 @@ php -S localhost:8000 -t public/
 saas-seeder/
 ├── public/                   # Web root (DocumentRoot points here)
 │   ├── sign-in.php          # Login page (complete auth logic)
+│   ├── super-user-dev.php   # Super admin creator (DEV ONLY)
 │   ├── logout.php           # Logout functionality
 │   ├── forgot-password.php  # Password recovery
 │   ├── access-denied.php    # Access denied page
@@ -115,12 +128,13 @@ saas-seeder/
 ### Features
 
 - **Dual Authentication:** Session-based (web) + JWT (API)
-- **Password Security:** Bcrypt hashing with automatic salt
-- **Session Management:** 30-minute timeout, auto-regeneration
+- **Password Security:** Argon2ID hashing with salt and pepper for enhanced security
+- **Session Management:** 30-minute timeout, auto-regeneration, prefixed session variables
 - **CSRF Protection:** Token validation on all state-changing requests
-- **Remember Me:** 30-day persistent sessions
+- **Remember Me:** 30-day persistent sessions with encrypted cookies
 - **Failed Login Tracking:** Automatic lockout after multiple failures
 - **Stored Procedures:** Database-level auth logic for consistency
+- **Role-Based Access Control:** Automatic routing and panel protection
 
 ### User Types & Routing
 
@@ -183,9 +197,14 @@ DB_PASSWORD=
 COOKIE_DOMAIN=localhost
 COOKIE_ENCRYPTION_KEY=your-32-character-encryption-key
 
+# Password Security
+PASSWORD_PEPPER=your-64-character-pepper-string
+
 # Application
 APP_ENV=development
 ```
+
+**Note:** The `PASSWORD_PEPPER` is used alongside Argon2ID to add an extra layer of security to password hashing. If not set, a fallback value will be used for development (not recommended for production).
 
 ---
 
@@ -193,8 +212,10 @@ APP_ENV=development
 
 Before going live:
 
+- [ ] **Remove or restrict access to `super-user-dev.php`** (development tool only!)
 - [ ] Change default `root` password
 - [ ] Update `COOKIE_ENCRYPTION_KEY` with random 32-char string
+- [ ] Set `PASSWORD_PEPPER` in `.env` with random 64-char string
 - [ ] Set `APP_ENV=production` in `.env`
 - [ ] Enable HTTPS (SSL certificate)
 - [ ] Set file permissions (`.env` should be 600)

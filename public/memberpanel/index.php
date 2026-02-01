@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__ . '/../../src/config/auth.php';
+
+// Require authentication
+requireAuth();
+
 $panel = 'member';
 $pageTitle = 'Member Panel';
 ?>
