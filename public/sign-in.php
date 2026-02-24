@@ -130,217 +130,312 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-  <title>Sign in - SaaS Seeder Template</title>
-  <!-- BEGIN GLOBAL MANDATORY STYLES -->
-  <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet" />
-  <!-- END GLOBAL MANDATORY STYLES -->
-  <!-- BEGIN PLUGINS STYLES -->
-  <link href="./assets/tabler/css/tabler-flags.min.css" rel="stylesheet" />
-  <link href="./assets/tabler/css/tabler-payments.min.css" rel="stylesheet" />
-  <link href="./assets/tabler/css/tabler-vendors.min.css" rel="stylesheet" />
-  <!-- END PLUGINS STYLES -->
-  <!-- SweetAlert2 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Sign In — SaaS Seeder</title>
+  <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <style>
     @import url("https://rsms.me/inter/inter.css");
+    *, *::before, *::after { box-sizing: border-box; }
 
-    /* Login page background */
-    body {
+    html, body { height: 100%; margin: 0; }
+
+    .auth-split {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Left panel ── */
+    .auth-left {
+      flex: 0 0 55%;
       background-image: url('<?php echo htmlspecialchars($loginBackground); ?>');
       background-size: cover;
       background-position: center;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-    }
-
-    /* Add darker overlay to make sign-in card stand out */
-    .page-center::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.65);
-      z-index: -1;
-    }
-
-    .page-center {
       position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 3rem;
+    }
+    .auth-left::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        160deg,
+        rgba(6, 111, 209, 0.55) 0%,
+        rgba(0, 0, 0, 0.72) 100%
+      );
+      pointer-events: none;
+    }
+    .auth-left > * { position: relative; z-index: 1; }
+
+    .auth-left-logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+    .auth-left-tagline {
+      color: rgba(255,255,255,0.92);
+    }
+    .auth-left-tagline h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: .75rem;
+    }
+    .auth-left-tagline p {
+      font-size: 1rem;
+      opacity: .8;
+      max-width: 380px;
+    }
+    .auth-left-footer {
+      font-size: .8rem;
+      color: rgba(255,255,255,.45);
+    }
+
+    /* ── Right panel ── */
+    .auth-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      padding: 2rem 1.5rem;
+    }
+    .auth-form-wrap {
+      width: 100%;
+      max-width: 400px;
+    }
+    .auth-form-wrap .brand-mobile {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--tblr-primary);
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .auth-form-wrap h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: .3rem;
+    }
+    .auth-form-wrap .subtitle {
+      color: #6b7280;
+      margin-bottom: 1.75rem;
+      font-size: .95rem;
+    }
+
+    .form-floating-label { position: relative; margin-bottom: 1rem; }
+    .form-floating-label input {
+      width: 100%;
+      height: 52px;
+      padding: 1.2rem .875rem .4rem;
+      font-size: .95rem;
+      border-radius: 8px;
+      border: 1.5px solid #e5e7eb;
+      transition: border-color .15s;
+      outline: none;
+    }
+    .form-floating-label input:focus {
+      border-color: var(--tblr-primary);
+      box-shadow: 0 0 0 3px rgba(6,111,209,.1);
+    }
+    .form-floating-label label {
+      position: absolute;
+      top: 50%;
+      left: .9rem;
+      transform: translateY(-50%);
+      font-size: .9rem;
+      color: #9ca3af;
+      transition: all .15s;
+      pointer-events: none;
+      background: transparent;
+    }
+    .form-floating-label input:focus ~ label,
+    .form-floating-label input:not(:placeholder-shown) ~ label {
+      top: .55rem;
+      font-size: .7rem;
+      color: var(--tblr-primary);
+      transform: none;
+    }
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 3rem; }
+    .pw-toggle {
+      position: absolute;
+      right: .875rem;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #9ca3af;
+      background: none;
+      border: none;
+      padding: 0;
+      line-height: 1;
+    }
+    .pw-toggle:hover { color: #374151; }
+
+    .btn-signin {
+      height: 50px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      letter-spacing: .01em;
+    }
+
+    @media (max-width: 991.98px) {
+      .auth-left { display: none; }
+      .auth-right { background: #f9fafb; }
     }
   </style>
 </head>
-
 <body>
-  <script src="./assets/tabler/js/tabler.min.js"></script>
-  <!-- SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <?php if (isset($loginSuccess) && $loginSuccess === true): ?>
-    <!-- Login Success - Show SweetAlert and Redirect -->
-    <div class="page page-center">
-      <div class="container container-tight py-4">
-        <div class="text-center mb-4">
-          <a href="." aria-label="SaaS Seeder" class="navbar-brand navbar-brand-autodark">
-            <h1 class="text-primary">SaaS Seeder</h1>
-          </a>
-        </div>
-        <div class="card card-md">
-          <div class="card-body text-center">
-            <div class="spinner-border text-primary mb-3" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <h3>Login Successful!</h3>
-            <p class="text-muted">Redirecting to dashboard...</p>
-          </div>
-        </div>
-      </div>
+<?php if ($loginSuccess): ?>
+<!-- ── Success state ── -->
+<div class="auth-split" style="justify-content:center;align-items:center;background:#f9fafb;">
+  <div class="text-center">
+    <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;" role="status"></div>
+    <h3 class="fw-semibold">Signing you in…</h3>
+  </div>
+</div>
+<script>
+  Swal.fire({
+    icon: 'success',
+    title: 'Welcome back!',
+    html: 'Hello, <strong><?php echo htmlspecialchars($userName ?? 'User'); ?></strong>. Taking you to your dashboard.',
+    timer: 2200,
+    timerProgressBar: true,
+    showConfirmButton: false,
+    allowOutsideClick: false,
+  }).then(() => { window.location.href = './index.php'; });
+</script>
+
+<?php else: ?>
+<!-- ── Login form ── -->
+<div class="auth-split">
+
+  <!-- Left panel -->
+  <div class="auth-left">
+    <a href="." class="auth-left-logo">SaaS Seeder</a>
+    <div class="auth-left-tagline">
+      <h2>Build your SaaS<br>faster than ever.</h2>
+      <p>Multi-tenant architecture, role-based access control, and a clean three-tier panel system — ready out of the box.</p>
     </div>
+    <div class="auth-left-footer">
+      &copy; <?php echo date('Y'); ?> Chwezi Core Systems
+    </div>
+  </div>
 
-    <script>
-      // Show SweetAlert immediately on page load
-      Swal.fire({
-        icon: 'success',
-        title: 'Welcome Back!',
-        html: '<p>Login successful!</p><p>Welcome, <strong><?php echo htmlspecialchars($userName ?? 'User'); ?></strong>!</p>',
-        timer: 2000,
-        timerProgressBar: true,
-        showConfirmButton: false,
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      }).then(() => {
-        window.location.href = './index.php';
-      });
-    </script>
+  <!-- Right panel -->
+  <div class="auth-right">
+    <div class="auth-form-wrap">
 
-  <?php else: ?>
-    <!-- Login Form -->
-    <div class="page page-center">
-      <div class="container container-tight py-4">
+      <!-- Mobile brand (hidden on desktop) -->
+      <div class="brand-mobile d-lg-none">SaaS Seeder</div>
 
-        <div class="card card-md">
-          <div class="card-body">
-            <div class="text-center mb-4">
-              <a href="." aria-label="SaaS Seeder" class="navbar-brand navbar-brand-autodark">
-                <h1 class="text-primary">SaaS Seeder</h1>
-              </a>
-            </div>
-            <h2 class="h2 text-center mb-4">Login to your account</h2>
+      <h2>Sign in</h2>
+      <p class="subtitle">Enter your credentials to access your account.</p>
 
-            <?php if (!empty($error)): ?>
-              <div class="alert alert-danger alert-dismissible" role="alert">
-                <div class="d-flex">
-                  <div>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24"
-                      viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
-                      <path d="M12 8v4"></path>
-                      <path d="M12 16h.01"></path>
-                    </svg>
-                  </div>
-                  <div><?php echo htmlspecialchars($error); ?></div>
-                </div>
-                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-              </div>
-            <?php endif; ?>
+      <?php if (!empty($error)): ?>
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" style="border-radius:8px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          <div><?php echo htmlspecialchars($error); ?></div>
+        </div>
+      <?php endif; ?>
 
-            <?php if (!empty($success)): ?>
-              <div class="alert alert-success alert-dismissible" role="alert">
-                <div class="d-flex">
-                  <div>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24"
-                      viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                      stroke-linejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                      <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
-                      <path d="M9 12l2 2l4 -4"></path>
-                    </svg>
-                  </div>
-                  <div><?php echo htmlspecialchars($success); ?></div>
-                </div>
-                <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
-              </div>
-            <?php endif; ?>
+      <?php if (!empty($success)): ?>
+        <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" role="alert" style="border-radius:8px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          <div><?php echo htmlspecialchars($success); ?></div>
+        </div>
+      <?php endif; ?>
 
-            <form action="./sign-in.php" method="POST" autocomplete="off">
-              <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
+      <form action="./sign-in.php" method="POST" autocomplete="off" novalidate id="loginForm">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
 
-              <div class="mb-3">
-                <label class="form-label">Username or Email</label>
-                <input type="text" name="username" class="form-control" placeholder="Enter your username"
-                  autocomplete="off" required value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>" />
-              </div>
+        <div class="form-floating-label">
+          <input
+            type="text"
+            name="username"
+            id="username"
+            placeholder=" "
+            autocomplete="off"
+            required
+            value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
+          >
+          <label for="username">Username or Email</label>
+        </div>
 
-              <div class="mb-2">
-                <label class="form-label">
-                  Password
-                  <span class="form-label-description">
-                    <a href="./forgot-password.php">I forgot password</a>
-                  </span>
-                </label>
-                <div class="input-group input-group-flat">
-                  <input type="password" name="password" id="password" class="form-control" placeholder="Your password"
-                    autocomplete="off" required />
-                  <span class="input-group-text">
-                    <a href="#" class="link-secondary" title="Show password" id="toggle-password">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="icon">
-                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
-                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
-                      </svg>
-                    </a>
-                  </span>
-                </div>
-              </div>
-
-              <div class="mb-2">
-                <label class="form-check">
-                  <input type="checkbox" name="remember" class="form-check-input" />
-                  <span class="form-check-label">Remember me on this device</span>
-                </label>
-              </div>
-
-              <div class="form-footer">
-                <button type="submit" class="btn btn-primary w-100">Sign in</button>
-              </div>
-            </form>
-          </div>
-
-
-          <div class="text-center text-muted mt-3">
-            <small>Copyright (C) 2026-<?php echo date('Y'); ?> <a href="https://chwezi.co.za" target="_blank">Chwezi Core
-                Systems</a></small>
+        <div class="form-floating-label">
+          <div class="pw-wrap">
+            <input
+              type="password"
+              name="password"
+              id="password"
+              placeholder=" "
+              autocomplete="off"
+              required
+            >
+            <label for="password">Password</label>
+            <button type="button" class="pw-toggle" id="togglePassword" aria-label="Toggle password visibility">
+              <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
+            </button>
           </div>
         </div>
-      </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <label class="form-check mb-0">
+            <input type="checkbox" name="remember" class="form-check-input">
+            <span class="form-check-label" style="font-size:.875rem;">Remember me</span>
+          </label>
+          <a href="./forgot-password.php" style="font-size:.875rem;" class="text-muted">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-signin" id="submitBtn">
+          Sign In
+        </button>
+      </form>
+
+      <p class="text-center text-muted mt-4" style="font-size:.78rem;">
+        &copy; <?php echo date('Y'); ?> <a href="https://chwezi.co.za" target="_blank" class="text-muted">Chwezi Core Systems</a>
+      </p>
+
     </div>
+  </div>
 
-    <!-- BEGIN GLOBAL MANDATORY SCRIPTS -->
-    <script src="./assets/tabler/js/tabler.min.js" defer></script>
-    <!-- END GLOBAL MANDATORY SCRIPTS -->
+</div>
+<?php endif; ?>
 
-    <!-- Password toggle script -->
-    <script>
-      document.getElementById('toggle-password')?.addEventListener('click', function (e) {
-        e.preventDefault();
-        const passwordField = document.getElementById('password');
-        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordField.setAttribute('type', type);
-      });
-    </script>
+<script src="./assets/tabler/js/tabler.min.js"></script>
+<script>
+  // Password visibility toggle
+  const pwField   = document.getElementById('password');
+  const toggleBtn = document.getElementById('togglePassword');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = pwField.type === 'password';
+      pwField.type = isPassword ? 'text' : 'password';
+      toggleBtn.innerHTML = isPassword
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>`;
+    });
+  }
 
-  <?php endif; ?>
+  // Submit button loading state
+  const form      = document.getElementById('loginForm');
+  const submitBtn = document.getElementById('submitBtn');
+  if (form && submitBtn) {
+    form.addEventListener('submit', () => {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Signing in…';
+    });
+  }
+</script>
 </body>
-
 </html>
