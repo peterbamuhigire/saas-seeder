@@ -11,12 +11,11 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 
-// Validate required environment variables
 $dotenv->required(['COOKIE_DOMAIN', 'COOKIE_ENCRYPTION_KEY', 'APP_ENV'])->notEmpty();
 
 try {
-    // Get current token
-    $token = $_SESSION['auth_token'] ?? null;
+    // Use getSession() — never raw $_SESSION
+    $token = getSession('auth_token');
 
     if ($token) {
         $db = (new Database())->getConnection();
@@ -28,20 +27,20 @@ try {
             new CookieHelper()
         );
 
-        // Invalidate token and remove cookie
         $authService->logout($token);
     }
 
-    // Clear session
-    session_unset();
+    // Clear all prefixed session variables, then destroy
+    clearPrefixedSession();
     session_destroy();
 
-    // Redirect with success message
-    header('Location: ./sign-in.php?logout=success');
+    header('Location: ./sign-in.php?msg=logout');
     exit();
 
 } catch (Exception $e) {
     error_log("Logout error: " . $e->getMessage());
-    header('Location: ./sign-in.php?error=logout_failed');
+    clearPrefixedSession();
+    session_destroy();
+    header('Location: ./sign-in.php?msg=logout');
     exit();
 }
