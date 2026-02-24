@@ -327,7 +327,7 @@ class PermissionService
      */
     private function isSuperAdmin(): bool
     {
-        return isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'super_admin';
+        return getSession('user_type') === 'super_admin';
     }
 
     /**
