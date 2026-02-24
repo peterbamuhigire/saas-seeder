@@ -42,7 +42,8 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-if (!$user || !password_verify($password, $user['password_hash'] ?? '')) {
+$passwordHelper = new \App\Auth\Helpers\PasswordHelper();
+if (!$user || !$passwordHelper->verifyPassword($password, $user['password_hash'] ?? '')) {
     json_response(401, ['success' => false, 'message' => 'Invalid credentials']);
 }
 
