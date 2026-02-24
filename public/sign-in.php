@@ -84,53 +84,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $result = $authService->authenticate($loginDTO);
 
-    if ($result->getStatus() == 'SUCCESS') {
-      // Regenerate session ID for security
+    if ($result->getStatus() === 'SUCCESS') {
+      // AuthService::authenticate() already wrote all session variables.
+      // We only need to regenerate the session ID here for security.
       regenerateSession();
 
-      // Set session data with prefix
-      setSession('user_id', $result->getUserId());
-      setSession('franchise_id', $result->getFranchiseId());
-      setSession('username', $result->getUsername());
-      setSession('user_type', $result->getUserData()['user_type'] ?? 'staff');
-      setSession('auth_token', $result->getToken());
-      setSession('last_activity', time());
-
-      // Set additional session variables
-      setSession('franchise_country', $result->getUserData()['country'] ?? '');
-      setSession('franchise_name', $result->getUserData()['franchise_name'] ?? '');
-      setSession('currency', $result->getUserData()['currency'] ?? '');
-      setSession('full_name', $result->getUserData()['full_name'] ?? $result->getUsername());
-      setSession('role_name', $result->getUserData()['role_name'] ?? ucfirst(str_replace('_', ' ', $result->getUserData()['user_type'] ?? 'staff')));
-
-      // Handle remember me
+      // Handle remember me cookie (AuthService doesn't set cookies)
       if ($rememberMe) {
-        $session = $authService->createUserSession($result->getUserId(), true);
-        $cookieHelper->createSecureCookie('remember_token', $session->getToken(), 86400 * 30);
+        try {
+          $cookieHelper = new CookieHelper();
+          $session = $authService->createUserSession($result->getUserId(), true);
+          $cookieHelper->createSecureCookie('remember_token', $session->getToken(), 86400 * 30);
+        } catch (\Exception $e) {
+          error_log('Remember me failed: ' . $e->getMessage());
+          // Non-fatal — user is still logged in
+        }
       }
 
       // Check for forced password change
-      if (($result->getUserData()['force_password_change'] ?? 0) == 1) {
+      if ((getSession('force_password_change') ?? 0) == 1) {
         header('Location: ./change-password.php');
         exit();
       }
 
-      // Success! Show SweetAlert and redirect
-      $userName = $result->getUserData()['full_name'] ?? $result->getUsername();
+      $userName = getSession('full_name') ?: $result->getUsername();
       $loginSuccess = true;
     } else {
-      // Map error codes to user-friendly messages
       $errorMessages = [
-        'USER_NOT_FOUND' => 'No account found with this username',
-        'INVALID_PASSWORD' => 'Invalid password provided',
-        'ACCOUNT_LOCKED' => 'Account locked due to multiple failed attempts',
-        'ACCOUNT_INACTIVE' => 'Account is currently inactive',
-        'ACCOUNT_SUSPENDED' => 'Account has been suspended',
-        'SESSION_ERROR' => 'Unable to create login session',
-        'DATABASE_ERROR' => 'System error: Database connection failed',
-        'VALIDATION_ERROR' => 'Invalid login credentials format'
+        'USER_NOT_FOUND'    => 'No account found with this username or email.',
+        'INVALID_PASSWORD'  => 'Invalid password provided.',
+        'ACCOUNT_LOCKED'    => 'Account locked due to multiple failed login attempts.',
+        'ACCOUNT_INACTIVE'  => 'Account is currently inactive.',
+        'ACCOUNT_SUSPENDED' => 'Account has been suspended.',
+        'SESSION_ERROR'     => 'Unable to create login session.',
+        'DATABASE_ERROR'    => 'System error: Database connection failed.',
+        'VALIDATION_ERROR'  => 'Invalid login credentials format.',
       ];
-
       $error = $errorMessages[$result->getStatus()] ?? 'Login failed. Please try again.';
     }
   } catch (\Exception $e) {
