@@ -37,8 +37,8 @@ $message = $messages[$reason] ?? $messages['permission_denied'];
 
 // Determine the dashboard URL based on user type
 $dashboardUrl = './index.php';
-if (isset($_SESSION['user_type'])) {
-    switch ($_SESSION['user_type']) {
+if (hasSession('user_type')) {
+    switch (getSession('user_type')) {
         case 'super_admin':
             $dashboardUrl = './adminpanel/';
             break;
@@ -58,11 +58,8 @@ if (isset($_SESSION['user_type'])) {
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <title>Access Denied - Maduuka</title>
     <!-- CSS files -->
-    <link href="./dist/css/tabler.min.css?1692870487" rel="stylesheet"/>
-    <link href="./dist/css/tabler-flags.min.css?1692870487" rel="stylesheet"/>
-    <link href="./dist/css/tabler-payments.min.css?1692870487" rel="stylesheet"/>
-    <link href="./dist/css/tabler-vendors.min.css?1692870487" rel="stylesheet"/>
-    <link href="./dist/css/demo.min.css?1692870487" rel="stylesheet"/>
+    <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet"/>
+    <link href="./assets/tabler/css/tabler-vendors.min.css" rel="stylesheet"/>
     <style>
         @import url('https://rsms.me/inter/inter.css');
 
@@ -360,7 +357,7 @@ if (isset($_SESSION['user_type'])) {
                     </div>
                 </div>
                 <?php endif; ?>
-                <?php if (isset($_SESSION['user_id'])): ?>
+                <?php if (hasSession('user_id')): ?>
                 <div class="error-details-item">
                     <svg xmlns="http://www.w3.org/2000/svg" class="error-details-icon" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -368,7 +365,7 @@ if (isset($_SESSION['user_type'])) {
                         <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
                     </svg>
                     <div>
-                        <strong>Your User Type:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $_SESSION['user_type'] ?? 'Unknown'))); ?>
+                        <strong>Your User Type:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', getSession('user_type') ?? 'Unknown'))); ?>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -402,13 +399,7 @@ if (isset($_SESSION['user_type'])) {
         </div>
     </div>
 
-    <!-- Core plugin JavaScript-->
-    <script src="./dist/libs/apexcharts/dist/apexcharts.min.js?1692870487" defer></script>
-    <script src="./dist/libs/jsvectormap/dist/js/jsvectormap.min.js?1692870487" defer></script>
-    <script src="./dist/libs/jsvectormap/dist/maps/world.js?1692870487" defer></script>
-    <script src="./dist/libs/jsvectormap/dist/maps/world-merc.js?1692870487" defer></script>
     <!-- Tabler Core -->
-    <script src="./dist/js/tabler.min.js?1692870487" defer></script>
-    <script src="./dist/js/demo.min.js?1692870487" defer></script>
+    <script src="./assets/tabler/js/tabler.min.js" defer></script>
 </body>
 </html>
