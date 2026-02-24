@@ -37,7 +37,7 @@ class AuthResult
      */
     public function isSuccessful(): bool
     {
-        return $this->status === 'Success';
+        return $this->status === 'SUCCESS';
     }
 
     /**
