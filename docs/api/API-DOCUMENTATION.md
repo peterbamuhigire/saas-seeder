@@ -15,6 +15,9 @@ https://yourdomain.com/api/v1
 
 ## Authentication
 
+> **Password hashing:** All API auth endpoints use `PasswordHelper::verifyPassword()` / `hashPassword()`
+> (Argon2ID + salt + pepper). Never use raw `password_verify()` or `password_hash()` in API code.
+
 ### 1. Login
 
 Authenticate user and receive JWT token.

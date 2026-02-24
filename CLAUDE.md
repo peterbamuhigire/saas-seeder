@@ -285,6 +285,17 @@ hasSession('user_id');               // Checks if exists
 
 ## Authentication & Security
 
+### Single Source of Truth
+
+| Concern | Owner | Rule |
+|---------|-------|------|
+| Password hashing | `PasswordHelper` | Only class allowed to hash/verify — never raw `password_hash()`/`password_verify()` |
+| Session writes after login | `AuthService::authenticate()` | `sign-in.php` only calls authenticate(), never writes sessions itself |
+| Session reads/writes | `setSession()` / `getSession()` | Never use raw `$_SESSION[...]` |
+| CSRF tokens | `CSRFHelper` | Uses session helpers internally; token clears on logout |
+| Auth result success | `AuthResult::getStatus() === 'SUCCESS'` | Always uppercase `'SUCCESS'` |
+| `isSuperAdmin()` check | `getSession('user_type')` | Never `$_SESSION['user_type']` directly |
+
 ### Password Hashing
 Uses **Argon2ID** with salt + pepper (NOT bcrypt):
 ```php

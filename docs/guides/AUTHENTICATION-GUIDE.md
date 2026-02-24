@@ -6,6 +6,18 @@ The SaaS Seeder Template uses a dual authentication system supporting both **ses
 
 ---
 
+## Single Source of Truth Rules
+
+| Concern | Owner | Rule |
+|---------|-------|------|
+| Password hashing | `PasswordHelper` | Only class that calls hash/verify — never raw `password_hash()`/`password_verify()` |
+| Session writes after login | `AuthService::authenticate()` | `sign-in.php` only calls authenticate(), never writes sessions itself |
+| Session reads/writes | `setSession()` / `getSession()` | Never use `$_SESSION[...]` directly |
+| CSRF tokens | `CSRFHelper` | Uses `setSession()`/`getSession()` internally — respects prefix on logout |
+| Auth result success check | `AuthResult::getStatus() === 'SUCCESS'` | Status is always uppercase `'SUCCESS'` |
+
+---
+
 ## Authentication Flow
 
 ### Session-Based Login (Web Pages)
@@ -15,15 +27,16 @@ User → sign-in.php
   ↓
 Submit credentials (username, password)
   ↓
-AuthService::authenticate()
+AuthService::authenticate()  ← sole session writer after login
   ↓
 sp_authenticate_user (Stored Procedure)
   ↓
-Password verification (bcrypt)
+PasswordHelper::verifyPassword() — Argon2ID + salt + pepper
   ↓
 sp_get_user_data (Stored Procedure)
   ↓
-Create session + Set $_SESSION variables
+AuthService writes ALL session vars via setSession()
+sign-in.php reads $result only — never writes sessions
   ↓
 Redirect based on user_type:
   - super_admin/owner → adminpanel/
@@ -65,20 +78,31 @@ Return JSON: {success, token, user_data}
 
 ## Session Management
 
-### Session Variables Set on Login
+**All session access goes through helper functions — never raw `$_SESSION`:**
 
 ```php
-$_SESSION['user_id']           // User primary key
-$_SESSION['franchise_id']      // Franchise context (can be NULL for super_admin)
-$_SESSION['username']          // Username
-$_SESSION['user_type']         // User type (super_admin, owner, staff, etc.)
-$_SESSION['auth_token']        // JWT token (if generated)
-$_SESSION['last_activity']     // Unix timestamp for timeout tracking
-$_SESSION['full_name']         // User's full name
-$_SESSION['role_name']         // Display name for role
-$_SESSION['franchise_name']    // Franchise name
-$_SESSION['currency']          // Franchise currency
-$_SESSION['franchise_country'] // Franchise country
+setSession('key', $value);   // writes $_SESSION['saas_app_key']
+getSession('key');            // reads  $_SESSION['saas_app_key']
+hasSession('key');            // checks $_SESSION['saas_app_key']
+unsetSession('key');          // removes $_SESSION['saas_app_key']
+clearPrefixedSession();       // removes ALL saas_app_* variables (on logout)
+```
+
+### Session Variables Set on Login (by AuthService)
+
+```php
+// Accessed via getSession('key') — stored as saas_app_key internally
+user_id           // User primary key
+franchise_id      // Franchise context (NULL for super_admin)
+username          // Username
+user_type         // User type (super_admin, owner, staff, etc.)
+auth_token        // JWT token (if generated)
+last_activity     // Unix timestamp for timeout tracking
+full_name         // User's full name
+role_name         // Display name for role
+franchise_name    // Franchise name
+currency          // Franchise currency
+franchise_country // Franchise country
 ```
 
 ### Session Timeout
@@ -122,47 +146,45 @@ requirePermissionGlobal('INVOICE_DELETE');
 
 ## Password Management
 
-### Password Hashing
+### Password Hashing — PasswordHelper (Single Source of Truth)
 
-Uses PHP's `password_hash()` with **bcrypt** (BCRYPT algorithm).
+Uses **Argon2ID** with a per-user random salt and a global pepper. Never use raw `password_hash()` or `password_verify()` — always use `PasswordHelper`.
 
 ```php
-// Hash password (automatically generates salt)
-$hash = password_hash($plainPassword, PASSWORD_BCRYPT);
+use App\Auth\Helpers\PasswordHelper;
 
-// Verify password
-if (password_verify($plainPassword, $storedHash)) {
+$passwordHelper = new PasswordHelper();
+
+// Hash (used in super-user-dev.php, register, change-password)
+$hash = $passwordHelper->hashPassword($plainPassword);
+// Stored format: salt(32 hex chars) + argon2id(hmac_sha256(pw, pepper) + salt)
+
+// Verify (used in AuthService, change-password)
+if ($passwordHelper->verifyPassword($plainPassword, $storedHash)) {
     // Password correct
 }
 ```
 
+**NEVER do this** — hashes will be incompatible with login:
+```php
+// WRONG
+$hash = password_hash($password, PASSWORD_BCRYPT);
+password_verify($password, $storedHash);
+```
+
 ### Force Password Change
 
-Users with `force_password_change = 1` are redirected to `change-password.php` after login.
+Users with `force_password_change = 1` in `tbl_users` are redirected to `public/change-password.php` after login. On success, the DB flag is cleared to `0` and `setSession('force_password_change', 0)` is called.
 
-### Forgot Password Flow
+### Forgot Password
 
-```
-User → forgot-password.php
-  ↓
-Enter email
-  ↓
-Generate reset token (sp_create_password_reset_token)
-  ↓
-Send email with reset link
-  ↓
-User clicks link → reset-password.php
-  ↓
-Enter new password
-  ↓
-Update password_hash, clear reset token
-```
+`forgot-password.php` currently shows a "not yet configured" notice. Email-based reset is a planned feature.
 
 ---
 
 ## CSRF Protection
 
-All forms include CSRF tokens to prevent Cross-Site Request Forgery attacks.
+All forms include CSRF tokens. `CSRFHelper` uses `setSession()`/`getSession()` internally so the token is stored under the `saas_app_` prefix and is properly cleared on `clearPrefixedSession()` (logout).
 
 ### Usage
 
@@ -174,7 +196,7 @@ $csrfToken = $csrfHelper->generateToken();
 // In form HTML
 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
 
-// In form handler (POST)
+// In form handler (POST) — throws Exception on failure
 $csrfHelper->validateToken($_POST['csrf_token'] ?? '');
 ```
 
@@ -304,9 +326,9 @@ $cookieHelper->createSecureCookie('remember_token', $token, 86400 * 30);
 ## Security Features
 
 ### 1. Password Security
-- **Bcrypt hashing** with automatic salt generation
-- **No plaintext storage** - passwords never stored in plain text
-- **Failed attempt tracking** - Lockout after multiple failures
+- **Argon2ID** with random salt + global pepper via `PasswordHelper` (never raw bcrypt)
+- **No plaintext storage** — passwords never stored in plain text
+- **Failed attempt tracking** — Lockout after multiple failures
 
 ### 2. Session Security
 - **Session regeneration** on login (prevents session fixation)
@@ -395,7 +417,7 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGc...
 
 2. Update routing in `src/config/auth.php`:
    ```php
-   if ($_SESSION['user_type'] === 'manager') {
+   if (getSession('user_type') === 'manager') {
        header('Location: ./managerpanel/');
    }
    ```
@@ -460,5 +482,5 @@ VALUES (1, 5, 2, 1); -- Assign SALES_MANAGER role to user 5
 
 ---
 
-**Last Updated:** 2026-02-01
-**Version:** 1.0
+**Last Updated:** 2026-02-25
+**Version:** 1.1 — Single source of truth enforcement, Argon2ID password hashing

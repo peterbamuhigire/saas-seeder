@@ -134,10 +134,17 @@ $_SESSION['saas_app_user_id'];
 
 | File | Changes | Status |
 |------|---------|--------|
-| `src/config/session.php` | Created new file | ✅ New |
-| `src/config/auth.php` | Updated all session references | ✅ Updated |
-| `public/sign-in.php` | Updated login session variables | ✅ Updated |
-| `docs/SESSION-PREFIX-SYSTEM.md` | Complete documentation | ✅ New |
+| `src/config/session.php` | Created new file | ✅ Complete |
+| `src/config/auth.php` | Updated all session references | ✅ Complete |
+| `public/sign-in.php` | AuthService is sole session writer; removed duplicate setSession() block | ✅ Complete |
+| `public/logout.php` | `$_SESSION['auth_token']` → `getSession('auth_token')` | ✅ Complete |
+| `public/access-denied.php` | `$_SESSION['user_type']` → `getSession()`/`hasSession()` | ✅ Complete |
+| `public/change-password.php` | New page — uses only setSession()/getSession() | ✅ New |
+| `src/Auth/Helpers/CSRFHelper.php` | All raw `$_SESSION['csrf_token']` → setSession()/getSession() | ✅ Complete |
+| `src/Auth/PermissionService.php` | `isSuperAdmin()` — `$_SESSION['user_type']` → `getSession('user_type')` | ✅ Complete |
+| `api/v1/auth/login.php` | Uses `PasswordHelper::verifyPassword()` instead of raw `password_verify()` | ✅ Complete |
+| `api/v1/public/auth/register.php` | Uses `PasswordHelper::hashPassword()` instead of `password_hash()` | ✅ Complete |
+| `docs/SESSION-PREFIX-SYSTEM.md` | Complete documentation | ✅ Complete |
 
 ---
 
