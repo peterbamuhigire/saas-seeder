@@ -59,7 +59,7 @@ $stmt->execute([
     $language,
     $country !== '' ? $country : null,
     $currency !== '' ? $currency : null,
-    password_hash($password, PASSWORD_BCRYPT),
+    (new \App\Auth\Helpers\PasswordHelper())->hashPassword($password),
     $verifyToken,
     (new DateTime('+1 day'))->format('Y-m-d H:i:s'),
 ]);
