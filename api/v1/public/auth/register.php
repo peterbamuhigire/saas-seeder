@@ -2,48 +2,72 @@
 declare(strict_types=1);
 
 /**
- * POST /public/auth/register
- * Captures franchise signup request and issues a verification token (email/SMS delivery to be integrated).
+ * POST /api/v1/public/auth/register
+ *
+ * Captures franchise signup request and issues a verification token.
+ * Email/SMS delivery to be integrated per project.
+ *
+ * Password hashing is delegated to UserService (single source of truth).
  */
 
 require_once __DIR__ . '/../../../../bootstrap.php';
 
-use DateTime;
+use App\Auth\Services\UserService;
+use App\Config\Database;
 use PDO;
 
-require_method('POST');
-$body = read_json_body();
-
-$email = trim((string)($body['email'] ?? ''));
-$password = (string)($body['password'] ?? '');
-$franchiseName = trim((string)($body['franchise_name'] ?? ''));
-$plan = trim((string)($body['plan'] ?? 'trial'));
-$language = trim((string)($body['language'] ?? 'en'));
-$country = trim((string)($body['country'] ?? ''));
-$currency = trim((string)($body['currency'] ?? 'UGX'));
-$phone = trim((string)($body['phone'] ?? ''));
-
-if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    json_response(422, ['success' => false, 'message' => 'Valid email is required']);
+// --- Method guard ---
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    errorResponse('Method not allowed', 405);
 }
-if ($password === '' || strlen($password) < 8) {
-    json_response(422, ['success' => false, 'message' => 'Password must be at least 8 characters']);
+
+// --- Read JSON body ---
+$rawBody = file_get_contents('php://input');
+$body = json_decode($rawBody ?: '', true);
+if (!is_array($body)) {
+    errorResponse('Invalid JSON body', 400);
+}
+
+$email         = trim((string) ($body['email'] ?? ''));
+$password      = (string) ($body['password'] ?? '');
+$franchiseName = trim((string) ($body['franchise_name'] ?? ''));
+$plan          = trim((string) ($body['plan'] ?? 'trial'));
+$language      = trim((string) ($body['language'] ?? 'en'));
+$country       = trim((string) ($body['country'] ?? ''));
+$currency      = trim((string) ($body['currency'] ?? 'UGX'));
+$phone         = trim((string) ($body['phone'] ?? ''));
+
+// --- Validate input ---
+if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    errorResponse('Valid email is required', 422);
 }
 if ($franchiseName === '') {
-    json_response(422, ['success' => false, 'message' => 'franchise_name is required']);
+    errorResponse('franchise_name is required', 422);
 }
 
-$db = get_db();
-ensure_signup_table($db);
+// Validate password strength through UserService
+$db = (new Database())->getConnection();
+$userService = new UserService($db);
+
+$passwordErrors = $userService->validatePasswordStrength($password);
+if (!empty($passwordErrors)) {
+    errorResponse(implode(' ', $passwordErrors), 422);
+}
+
+// Ensure signup table exists
+ensureSignupTable($db);
 
 // Prevent duplicate signup for same email pending/verified
 $check = $db->prepare('SELECT id, is_verified FROM tbl_api_signup_requests WHERE email = ? ORDER BY id DESC LIMIT 1');
 $check->execute([$email]);
 if ($row = $check->fetch(PDO::FETCH_ASSOC)) {
-    if ((int)$row['is_verified'] === 0) {
-        json_response(409, ['success' => false, 'message' => 'Signup already pending verification']);
+    if ((int) $row['is_verified'] === 0) {
+        errorResponse('Signup already pending verification', 409);
     }
 }
+
+// Hash password through UserService (single source of truth)
+$hashedPassword = $userService->hashPassword($password);
 
 $verifyToken = bin2hex(random_bytes(16));
 $stmt = $db->prepare('
@@ -59,20 +83,17 @@ $stmt->execute([
     $language,
     $country !== '' ? $country : null,
     $currency !== '' ? $currency : null,
-    (new \App\Auth\Helpers\PasswordHelper())->hashPassword($password),
+    $hashedPassword,
     $verifyToken,
-    (new DateTime('+1 day'))->format('Y-m-d H:i:s'),
+    date('Y-m-d H:i:s', strtotime('+1 day')),
 ]);
 
-json_response(201, [
-    'success' => true,
-    'message' => 'Signup created. Please verify email/SMS.',
-    'data' => [
-        'verify_token' => $verifyToken, // In production, send via email/SMS instead of returning
-    ],
-]);
+jsonResponse(true, [
+    'verify_token' => $verifyToken, // In production, send via email/SMS instead of returning
+], 'Signup created. Please verify email/SMS.', 201);
 
-function ensure_signup_table(PDO $db): void {
+function ensureSignupTable(PDO $db): void
+{
     $sql = "CREATE TABLE IF NOT EXISTS `tbl_api_signup_requests` (
         `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         `email` VARCHAR(255) NOT NULL,
@@ -90,6 +111,6 @@ function ensure_signup_table(PDO $db): void {
         `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (`id`),
         UNIQUE KEY `uk_email_latest` (`email`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
     $db->exec($sql);
 }

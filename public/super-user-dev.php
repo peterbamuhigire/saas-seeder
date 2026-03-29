@@ -1,19 +1,41 @@
 <?php
 /**
- * Super User Development Tool
- * SECURITY WARNING: Remove or restrict access to this file in production!
+ * Super User Development Tool — SCAFFOLDING ONLY
+ *
+ * PURPOSE: Create the initial super_admin account when bootstrapping a new
+ *          SaaS project from the Seeder template. This is NOT a production
+ *          page and MUST be deleted after the first super admin is created.
+ *
+ * LIFECYCLE:
+ *   1. Run database migration (setup-database.ps1)
+ *   2. Visit this page to create the first super_admin
+ *   3. DELETE THIS FILE immediately after — it is not needed again
+ *
+ * SAFETY: This file refuses to run when APP_ENV=production. Even so, never
+ *         ship it to production. Treat it like a setup wizard that self-destructs.
+ *
+ * All user creation is delegated to UserService (single source of truth).
  */
 require_once __DIR__ . '/../src/config/database.php';
 require_once __DIR__ . '/../src/config/session.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Auth\Helpers\{PasswordHelper, CSRFHelper};
+use App\Auth\Helpers\CSRFHelper;
+use App\Auth\Services\UserService;
 use App\Config\Database;
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
 
 $dotenv->required(['DB_HOST', 'DB_NAME', 'DB_USER', 'COOKIE_ENCRYPTION_KEY', 'APP_ENV'])->notEmpty();
+
+// ── PRODUCTION GUARD ─────────────────────────────────────────────────
+// Block access entirely in production, even if someone forgot to delete the file.
+$appEnv = $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'development';
+if ($appEnv === 'production') {
+    http_response_code(403);
+    exit('This scaffolding tool is disabled in production. Delete this file.');
+}
 
 // Need session for CSRF
 initSession();
@@ -33,44 +55,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email           = trim($_POST['email'] ?? '');
         $firstName       = trim($_POST['first_name'] ?? '');
         $lastName        = trim($_POST['last_name'] ?? '');
-        $password        = trim($_POST['password'] ?? '');
-        $confirmPassword = trim($_POST['confirm_password'] ?? '');
+        $password        = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
 
-        if (empty($username) || empty($email) || empty($firstName) || empty($lastName) || empty($password)) {
-            throw new \Exception('All fields are required.');
-        }
         if ($password !== $confirmPassword) {
             throw new \Exception('Passwords do not match.');
         }
 
-        $passwordHelper = new PasswordHelper();
-        $errors = $passwordHelper->validatePasswordStrength($password);
-        if (!empty($errors)) {
-            throw new \Exception(implode(' ', $errors));
-        }
-
-        $hashedPassword = $passwordHelper->hashPassword($password);
+        // Delegate entirely to UserService — the single source of truth
+        // for user creation, validation, hashing, and insertion.
         $db = (new Database())->getConnection();
+        $userService = new UserService($db);
 
-        $checkStmt = $db->prepare("SELECT id FROM tbl_users WHERE username = ? OR email = ?");
-        $checkStmt->execute([$username, $email]);
-        if ($checkStmt->fetch()) {
-            throw new \Exception('Username or email already exists.');
-        }
+        $newUser = $userService->createUser([
+            'username'   => $username,
+            'email'      => $email,
+            'password'   => $password,
+            'first_name' => $firstName,
+            'last_name'  => $lastName,
+            'user_type'  => 'super_admin',
+            'franchise_id' => null,
+        ]);
 
-        $insertStmt = $db->prepare("
-            INSERT INTO tbl_users
-              (franchise_id, username, user_type, email, password_hash, first_name, last_name, status, force_password_change, created_at)
-            VALUES
-              (NULL, ?, 'super_admin', ?, ?, ?, ?, 'active', 0, NOW())
-        ");
-
-        if ($insertStmt->execute([$username, $email, $hashedPassword, $firstName, $lastName])) {
-            $createSuccess   = true;
-            $createdUsername = $username;
-        } else {
-            throw new \Exception('Failed to create user. Check database logs.');
-        }
+        $createSuccess  = true;
+        $createdUsername = $newUser['username'];
 
     } catch (\Exception $e) {
         $error = $e->getMessage();

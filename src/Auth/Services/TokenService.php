@@ -13,22 +13,22 @@ class TokenService implements TokenServiceInterface
     private int $tokenExpiry;
     private PDO $db;
 
-    public function __construct(PDO $db) 
+    public function __construct(PDO $db)
     {
         $this->db = $db;
-        // Load from .env file using environment variable
-        $secretKey = $_ENV['JWT_SECRET_KEY'] ?? null;
-        
+
+        // JWT_SECRET_KEY must be configured in .env — never auto-generate at runtime.
+        $secretKey = $_ENV['JWT_SECRET_KEY'] ?? $_SERVER['JWT_SECRET_KEY'] ?? null;
         if (!$secretKey) {
-            // Generate a fallback key if not set
-            $secretKey = bin2hex(random_bytes(32));
-            // Store it for future use
-            file_put_contents('.env', "\nJWT_SECRET_KEY=$secretKey", FILE_APPEND);
+            throw new \RuntimeException(
+                'JWT_SECRET_KEY is not set in .env. '
+                . 'Generate one with: php -r "echo bin2hex(random_bytes(32));"'
+            );
         }
-        
+
         $this->secretKey = $secretKey;
         $this->algorithm = 'HS256';
-        $this->tokenExpiry = 3600 * 24; // 24 hours
+        $this->tokenExpiry = 900; // 15 minutes — short-lived access tokens per security best practice
     }
     public function generateToken(int $userId, int $franchiseId): string 
     {
@@ -129,33 +129,42 @@ class TokenService implements TokenServiceInterface
         ]);
     }
 
-    public function validateToken(string $token): bool 
+    public function validateToken(string $token): bool
     {
         try {
             $decoded = JWT::decode($token, new Key($this->secretKey, $this->algorithm));
-            
+
+            // Check expiry
+            if ($decoded->exp <= time()) {
+                return false;
+            }
+
+            // Verify session is still valid in DB
             $stmt = $this->db->prepare("CALL sp_validate_session(?)");
             $stmt->execute([$decoded->jti]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            return $decoded->exp > time() && $result['is_valid'];
-        } catch (\Exception $e) {
-                // Also check token permission version matches current franchise permission_version
-                $franchiseId = $decoded->franchise_id ?? null;
-                if ($franchiseId !== null) {
-                    try {
-                        $pvstmt = $this->db->prepare('SELECT permission_version FROM tbl_franchises WHERE id = ? LIMIT 1');
-                        $pvstmt->execute([$franchiseId]);
-                        $pvrow = $pvstmt->fetch(PDO::FETCH_ASSOC);
-                        $currentPv = (int)($pvrow['permission_version'] ?? 0);
-                        $tokenPv = (int)($decoded->pv ?? 0);
-                        if ($tokenPv !== $currentPv) {
-                            return false; // token stale due to permission changes
-                        }
-                    } catch (\Exception $e) {
-                        // ignore and continue - defensive
+
+            if (!$result || !$result['is_valid']) {
+                return false;
+            }
+
+            // Check token permission version matches current franchise permission_version
+            $franchiseId = $decoded->franchise_id ?? null;
+            if ($franchiseId !== null) {
+                $pvstmt = $this->db->prepare('SELECT permission_version FROM tbl_franchises WHERE id = ? LIMIT 1');
+                $pvstmt->execute([$franchiseId]);
+                $pvrow = $pvstmt->fetch(PDO::FETCH_ASSOC);
+                if ($pvrow) {
+                    $currentPv = (int) ($pvrow['permission_version'] ?? 0);
+                    $tokenPv   = (int) ($decoded->pv ?? 0);
+                    if ($tokenPv !== $currentPv) {
+                        return false; // token stale due to permission changes
                     }
                 }
+            }
+
+            return true;
+        } catch (\Exception $e) {
             return false;
         }
     }

@@ -225,9 +225,27 @@ php -S localhost:8000 -t public/
 1. Run database migration: `.\setup-database.ps1`
 2. Fix collations (if errors): `.\fix-database.ps1`
 3. Create super admin: Visit `http://localhost:8000/super-user-dev.php`
-4. Login: Visit `http://localhost:8000/sign-in.php`
+4. **DELETE `super-user-dev.php`** immediately after creating the first super admin
+5. Login: Visit `http://localhost:8000/sign-in.php`
 
 **CRITICAL:** Use `super-user-dev.php` to create admin users, NOT the migration default credentials. The password hashing differs (Argon2ID vs bcrypt).
+
+### `super-user-dev.php` Lifecycle
+
+This file is a **scaffolding-only** tool. Its sole purpose is to create the initial super_admin account when bootstrapping a new project. It is NOT part of the running application.
+
+**Lifecycle:**
+1. Run database migration
+2. Visit `super-user-dev.php` to create the first super admin
+3. **DELETE the file** — it is never needed again
+
+**Safety guards:**
+- Blocked when `APP_ENV=production` (returns 403)
+- Even so, always delete it after scaffolding — defence in depth
+
+**After deletion**, all user management goes through:
+- `UserService` (programmatic user creation)
+- Admin panel user management pages (future, per-project)
 
 ## Three-Tier Panel Architecture
 
@@ -289,12 +307,16 @@ hasSession('user_id');               // Checks if exists
 
 | Concern | Owner | Rule |
 |---------|-------|------|
+| **User creation** | `UserService` | Only class allowed to INSERT into `tbl_users` — validates, hashes, and inserts in one place |
 | Password hashing | `PasswordHelper` | Only class allowed to hash/verify — never raw `password_hash()`/`password_verify()` |
 | Session writes after login | `AuthService::authenticate()` | `sign-in.php` only calls authenticate(), never writes sessions itself |
+| API authentication | `AuthService::authenticate()` | API login uses the same AuthService as web sign-in — no separate auth path |
 | Session reads/writes | `setSession()` / `getSession()` | Never use raw `$_SESSION[...]` |
 | CSRF tokens | `CSRFHelper` | Uses session helpers internally; token clears on logout |
 | Auth result success | `AuthResult::getStatus() === 'SUCCESS'` | Always uppercase `'SUCCESS'` |
 | `isSuperAdmin()` check | `getSession('user_type')` | Never `$_SESSION['user_type']` directly |
+| JWT token issuance | `TokenService` | Secret key MUST be in `.env` — never auto-generated at runtime |
+| Cookie encryption | `CookieHelper` | Encryption key MUST be in `.env` — never auto-generated at runtime |
 
 ### Password Hashing
 Uses **Argon2ID** with salt + pepper (NOT bcrypt):
@@ -490,6 +512,25 @@ $franchiseId = getSession('franchise_id');
 - **`/memberpanel/`** = End user portal
 - **`/adminpanel/`** = Super admin only
 
+### 5. Direct User INSERT (Bypass UserService)
+**NEVER write raw INSERT/UPDATE on `tbl_users`!** Always use `UserService`:
+```php
+// CORRECT — centralized validation, hashing, and insertion
+$userService = new UserService($db);
+$newUser = $userService->createUser([
+    'username'     => 'john',
+    'email'        => 'john@example.com',
+    'password'     => 'SecurePass1!',
+    'first_name'   => 'John',
+    'last_name'    => 'Doe',
+    'user_type'    => 'staff',
+    'franchise_id' => 1,
+]);
+
+// WRONG — bypasses validation, may use wrong hashing
+$db->prepare("INSERT INTO tbl_users ...")->execute([...]);
+```
+
 ## Environment Configuration
 
 Required `.env` variables:
@@ -504,7 +545,13 @@ COOKIE_ENCRYPTION_KEY=your-32-char-key
 PASSWORD_PEPPER=your-64-char-pepper
 
 APP_ENV=development
-JWT_SECRET_KEY=
+JWT_SECRET_KEY=your-64-char-key
+```
+
+**CRITICAL:** `JWT_SECRET_KEY` and `COOKIE_ENCRYPTION_KEY` are now **required** — the
+application will throw a `RuntimeException` if they are missing. Generate them with:
+```bash
+php -r "echo bin2hex(random_bytes(32));"
 ```
 
 ## Documentation
@@ -525,13 +572,15 @@ JWT_SECRET_KEY=
 
 ## Security Checklist Before Production
 
-- [ ] Remove or restrict `super-user-dev.php`
+- [ ] **DELETE `super-user-dev.php`** (scaffolding tool — must not exist in production)
 - [ ] Set `PASSWORD_PEPPER` to random 64+ character string
-- [ ] Set `COOKIE_ENCRYPTION_KEY` to random 32+ character string
+- [ ] Set `COOKIE_ENCRYPTION_KEY` to random 32+ character string (required — app will crash without it)
+- [ ] Set `JWT_SECRET_KEY` to random 64+ character string (required — app will crash without it)
 - [ ] Change `APP_ENV` to `production`
 - [ ] Enable HTTPS (session cookies require it in production)
 - [ ] Change `SESSION_PREFIX` from `saas_app_` to your app-specific prefix
 - [ ] Review all queries for proper franchise_id filtering
+- [ ] Verify all user creation goes through `UserService` (no raw INSERT on `tbl_users`)
 
 ## Customizing for Your SaaS
 

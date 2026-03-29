@@ -11,25 +11,24 @@ class CookieHelper
     private string $sameSite;
     private string $encryptionKey;
 
-    public function __construct() 
+    public function __construct()
     {
-        // Get required environment variables with fallbacks
-        $domain = $_ENV['COOKIE_DOMAIN'] ?? null;
-        if (!$domain) {
-            $domain = $_ENV['HTTP_HOST'] ?? 'localhost';
-            file_put_contents('.env', "\nCOOKIE_DOMAIN=$domain", FILE_APPEND);
-        }
+        // Get required environment variables — these MUST be set in .env
+        // Never auto-generate secrets at runtime; fail loudly instead.
+        $domain = $_ENV['COOKIE_DOMAIN'] ?? $_SERVER['COOKIE_DOMAIN'] ?? 'localhost';
         $this->domain = $domain;
 
-        // Set environment-based security
-        $this->secure = $_ENV['APP_ENV'] ?? 'development' === 'production';
+        // Fix: parentheses ensure ?? resolves before ===
+        $this->secure = ($_ENV['APP_ENV'] ?? 'development') === 'production';
         $this->sameSite = 'Strict';
 
-        // Handle encryption key
-        $encryptionKey = $_ENV['COOKIE_ENCRYPTION_KEY'] ?? null;
+        // Encryption key must be configured in .env
+        $encryptionKey = $_ENV['COOKIE_ENCRYPTION_KEY'] ?? $_SERVER['COOKIE_ENCRYPTION_KEY'] ?? null;
         if (!$encryptionKey) {
-            $encryptionKey = bin2hex(random_bytes(32));
-            file_put_contents('.env', "\nCOOKIE_ENCRYPTION_KEY=$encryptionKey", FILE_APPEND);
+            throw new \RuntimeException(
+                'COOKIE_ENCRYPTION_KEY is not set in .env. '
+                . 'Generate one with: php -r "echo bin2hex(random_bytes(32));"'
+            );
         }
         $this->encryptionKey = $encryptionKey;
     }

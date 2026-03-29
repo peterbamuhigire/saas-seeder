@@ -2,91 +2,90 @@
 declare(strict_types=1);
 
 /**
- * POST /auth/login
- * Authenticates user (email/username + password), issues access/refresh tokens, and records refresh jti for revocation.
+ * POST /api/v1/auth/login
+ *
+ * Authenticates user (email/username + password) via the centralized
+ * AuthService, issues an access token, and returns user data.
+ *
+ * Uses the same AuthService + PasswordHelper + TokenService chain as
+ * the web sign-in flow — single source of truth for authentication.
  */
-
-use App\Http\Auth\JwtService;
-use App\Http\Auth\RefreshTokenStore;
-use PDO;
-use DateTime;
 
 require_once __DIR__ . '/../../../bootstrap.php';
 
-require_method('POST');
-$body = read_json_body();
+// --- Method guard ---
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    errorResponse('Method not allowed', 405);
+}
 
-$usernameOrEmail = trim((string)($body['username'] ?? $body['email'] ?? ''));
-$password = (string)($body['password'] ?? '');
-$deviceId = trim((string)($body['device_id'] ?? ''));
+// --- Read JSON body ---
+$rawBody = file_get_contents('php://input');
+$body = json_decode($rawBody ?: '', true);
+if (!is_array($body)) {
+    errorResponse('Invalid JSON body', 400);
+}
+
+// --- Validate input ---
+$usernameOrEmail = trim((string) ($body['username'] ?? $body['email'] ?? ''));
+$password        = (string) ($body['password'] ?? '');
 
 if ($usernameOrEmail === '' || $password === '') {
-    json_response(422, ['success' => false, 'message' => 'Username/email and password are required']);
+    errorResponse('Username/email and password are required', 422);
 }
 
-$db = get_db();
-// Prefer stored procedure when available (ensures consistent validation/business rules)
+// --- Authenticate through centralized services ---
+use App\Auth\Services\{AuthService, TokenService, PermissionService};
+use App\Auth\Helpers\{PasswordHelper, CookieHelper};
+use App\Auth\DTO\LoginDTO;
+use App\Config\Database;
+
 try {
-    $stmt = $db->prepare('CALL sp_auth_login(:identifier)');
-    $stmt->execute(['identifier' => $usernameOrEmail]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    // Fallback to direct query if SP not present
-    $stmt = $db->prepare('
-        SELECT id, franchise_id, username, email, password_hash, user_type, is_active
-        FROM tbl_users
-        WHERE (email = :identifier OR username = :identifier)
-        LIMIT 1
-    ');
-    $stmt->execute(['identifier' => $usernameOrEmail]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-}
+    $db = (new Database())->getConnection();
+    $authService = new AuthService(
+        $db,
+        new TokenService($db),
+        new PermissionService($db),
+        new PasswordHelper(),
+        new CookieHelper()
+    );
 
-$passwordHelper = new \App\Auth\Helpers\PasswordHelper();
-if (!$user || !$passwordHelper->verifyPassword($password, $user['password_hash'] ?? '')) {
-    json_response(401, ['success' => false, 'message' => 'Invalid credentials']);
-}
+    $loginDTO = new LoginDTO(
+        $usernameOrEmail,
+        $password,
+        $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+        $_SERVER['HTTP_USER_AGENT'] ?? 'API Client'
+    );
 
-if (isset($user['is_active']) && (int)$user['is_active'] === 0) {
-    json_response(403, ['success' => false, 'message' => 'User is inactive']);
-}
+    $result = $authService->authenticate($loginDTO);
 
-$jwt = new JwtService();
-$sessionJti = bin2hex(random_bytes(16));
-$baseClaims = [
-    'sub' => (int)$user['id'],
-    'fid' => (int)$user['franchise_id'],
-    'ut'  => $user['user_type'] ?? 'staff',
-    'did' => $deviceId !== '' ? $deviceId : null,
-    'jti' => $sessionJti,
-];
+    if ($result->getStatus() !== 'SUCCESS') {
+        $statusCodes = [
+            'USER_NOT_FOUND'    => 401,
+            'INVALID_PASSWORD'  => 401,
+            'ACCOUNT_LOCKED'    => 423,
+            'ACCOUNT_INACTIVE'  => 403,
+            'ACCOUNT_SUSPENDED' => 403,
+        ];
+        $httpCode = $statusCodes[$result->getStatus()] ?? 401;
+        errorResponse('Invalid credentials', $httpCode);
+    }
 
-$accessToken = $jwt->issueAccessToken(array_filter($baseClaims, fn($v) => $v !== null));
-$refreshToken = $jwt->issueRefreshToken(array_filter($baseClaims, fn($v) => $v !== null));
+    $userData = $result->getUserData();
 
-// Persist refresh token metadata for revocation
-$store = new RefreshTokenStore($db);
-$store->store(
-    userId: (int)$user['id'],
-    franchiseId: (int)$user['franchise_id'],
-    jti: $sessionJti,
-    deviceId: $deviceId !== '' ? $deviceId : null,
-    expiresAt: (new DateTime())->setTimestamp(time() + (int)($_ENV['JWT_REFRESH_TTL'] ?? 2592000))
-);
-
-json_response(200, [
-    'success' => true,
-    'data' => [
-        'access_token' => $accessToken,
-        'refresh_token' => $refreshToken,
-        'token_type' => 'Bearer',
-        'expires_in' => (int)($_ENV['JWT_ACCESS_TTL'] ?? 900),
-        'user' => [
-            'id' => (int)$user['id'],
-            'franchise_id' => (int)$user['franchise_id'],
-            'username' => $user['username'],
-            'email' => $user['email'],
-            'user_type' => $user['user_type'] ?? null,
+    jsonResponse(true, [
+        'access_token' => $result->getToken(),
+        'token_type'   => 'Bearer',
+        'expires_in'   => 900,
+        'user'         => [
+            'id'           => $result->getUserId(),
+            'franchise_id' => $result->getFranchiseId(),
+            'username'     => $result->getUsername(),
+            'email'        => $userData['email'] ?? null,
+            'user_type'    => $userData['user_type'] ?? null,
         ],
-    ],
-]);
+    ], 'Login successful');
+
+} catch (\Exception $e) {
+    error_log('API login error: ' . $e->getMessage());
+    errorResponse('Internal server error', 500);
+}
