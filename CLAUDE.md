@@ -2,15 +2,86 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**IMPORTANT:** When this template is scaffolded into a new project, this CLAUDE.md becomes that project's CLAUDE.md. Update it with project-specific details during scaffolding.
+
 ## Project Overview
 
 **SaaS Seeder Template** - A production-ready, multi-tenant SaaS starter template with complete authentication, RBAC, and three-tier panel architecture for building SaaS applications like school management systems, restaurant platforms, or medical portals.
 
+## Development Pipeline
+
+This template is part of a three-system pipeline:
+
+```
+┌─────────────────────────┐     ┌──────────────────────┐     ┌─────────────────────────┐
+│  1. SDLC-Docs-Engine    │────▶│  2. SaaS Seeder      │────▶│  3. Skills-Driven Dev   │
+│  (srs-skills repo)      │     │  (this template)     │     │  (~/.claude/skills/)    │
+│                         │     │                      │     │                         │
+│  Generates:             │     │  Provides:           │     │  Enforces:              │
+│  - PRD / Vision         │     │  - Auth + RBAC       │     │  - 60+ coding standards │
+│  - SRS / User Stories   │     │  - Multi-tenancy     │     │  - PHP, MySQL, UI/UX    │
+│  - HLD / LLD            │     │  - Three-tier panels │     │  - Security, a11y       │
+│  - DB Design / ERDs     │     │  - Session + JWT     │     │  - Architecture patterns│
+│  - API Specification    │     │  - API bootstrap     │     │  - Mobile API design    │
+│  - Test Strategy        │     │  - Page templates    │     │  - SDLC documentation   │
+└─────────────────────────┘     └──────────────────────┘     └─────────────────────────┘
+```
+
+### System 1: SDLC-Docs-Engine (Input)
+
+The [SDLC-Docs-Engine](https://github.com/peterbamuhigire/srs-skills) generates IEEE/ISO-compliant project documentation across 10 SDLC phases (63 skills). Its outputs are the **input** to this template.
+
+### System 2: SaaS Seeder Template (This Repo)
+
+This template provides the scaffolding — auth, RBAC, multi-tenancy, session management, panel architecture. It is cloned and customised for each new project.
+
+### System 3: Claude Code Skills (Standards Enforcement)
+
+The 60+ skills in `~/.claude/skills/` are the **authoritative coding standards**. All development MUST follow them. They are not suggestions — they are enforced rules distilled from 20+ authoritative books.
+
+**Core web SaaS skill stack (always loaded):**
+- `webapp-gui-design` — Tabler/Bootstrap 5 UI patterns
+- `form-ux-design` — Cross-platform form UX
+- `practical-ui-design` — Colour, typography, layout system
+- `vibe-security-skill` — OWASP Top 10 baseline
+- `php-modern-standards` — PHP 8+ OOP, PSR, strict types
+- `mysql-best-practices` — Schema design, indexing, multi-tenant isolation
+- `dual-auth-rbac` — Session + JWT authentication
+- `multi-tenant-saas-architecture` — Tenant isolation, three-panel separation
+- `api-error-handling` — Standardised API error responses
+- `api-pagination` — Offset pagination for REST APIs
+
+**The web app also serves as the API backend for mobile apps.** The MySQL database designed here IS the database for Android and iOS apps. API endpoints built here serve both web frontend and mobile clients.
+
 ## Starting a New Project from Template
 
-### Project Preparation Workflow
+### End-to-End Workflow
 
-**BEFORE running setup, developers MUST provide:**
+```
+Step 1: Generate documentation with SDLC-Docs-Engine
+Step 2: Place documents in this template's intake directories
+Step 3: Run scaffolding (database, branding, user types)
+Step 4: Develop features following Skills standards
+Step 5: Build mobile APIs alongside web features
+```
+
+### Step 1: SDLC-Docs-Engine → Template Intake
+
+| Engine Phase | Engine Output | Template Intake Location |
+|-------------|---------------|------------------------|
+| Phase 01: Strategic Vision | PRD, Vision Statement | `docs/project-requirements/requirements.md` |
+| Phase 02: Requirements | SRS §3.2 (functional) OR User Stories | `docs/project-requirements/requirements.md` |
+| Phase 02: Requirements | Business rules, validation logic | `docs/project-requirements/business-rules.md` |
+| Phase 02: Requirements | Stakeholder analysis, user roles | `docs/project-requirements/user-types.md` |
+| Phase 02: Requirements | Use cases OR story maps | `docs/project-requirements/workflows.md` |
+| Phase 03: Design | Database Design (ERDs, schema) | `database/schema/core-schema.sql` |
+| Phase 03: Design | API Specification (OpenAPI 3.0) | `docs/api/` (reference during development) |
+| Phase 03: Design | HLD / LLD | Architecture decisions for this CLAUDE.md |
+| Phase 05: Testing | Test Strategy, Test Plans | Testing approach for the project |
+
+**If SDLC-Docs-Engine outputs are not available**, developers can manually create the intake files following the formats below.
+
+### Step 2: Place Project Requirements in `docs/project-requirements/`
 
 #### 1. Project Requirements in `docs/project-requirements/`
 
@@ -564,11 +635,25 @@ php -r "echo bin2hex(random_bytes(32));"
 
 ## Development Workflow
 
-1. **Create database changes:** Add to new SQL file in `docs/seeder-template/`
-2. **Create franchise admin pages:** In `/public/` root, use `skeleton.php` as template
-3. **Create end user pages:** In `/public/memberpanel/`
-4. **Add permissions:** Define in `tbl_permissions`, check with `requirePermissionGlobal()`
-5. **Test with different user types:** super_admin, owner, staff, member
+**All development MUST follow the skills in `~/.claude/skills/`.** These are the authoritative coding standards — not suggestions.
+
+1. **Plan features:** Use `feature-planning` skill to create specs and implementation plans in `docs/plans/`
+2. **Create database changes:** Follow `mysql-best-practices` skill. Add migrations to `database/migrations-production/` (idempotent, non-destructive)
+3. **Create franchise admin pages:** In `/public/` root, clone `skeleton.php`. Follow `webapp-gui-design` + `practical-ui-design` skills
+4. **Create end user pages:** In `/public/memberpanel/`. Same UI skills apply
+5. **Build API endpoints:** In `/api/v1/`. Follow `api-error-handling` + `api-pagination` skills. These endpoints serve both web and mobile clients
+6. **Add permissions:** Define in `tbl_permissions`, check with `requirePermissionGlobal()`. Follow `dual-auth-rbac` skill
+7. **Security:** Apply `vibe-security-skill` to every endpoint and page
+8. **Test with different user types:** super_admin, owner, staff, member
+
+### Mobile API Design
+
+The web app IS the backend for mobile apps. When building features:
+- Every user-facing action must have a corresponding API endpoint
+- Use JWT authentication for mobile (session for web) — both paths go through `AuthService`
+- Follow `api-pagination` skill for list endpoints
+- Follow `api-error-handling` skill for consistent error responses
+- Mobile apps (Android/iOS) are built separately using their own skills but share this database and API
 
 ## Security Checklist Before Production
 
@@ -584,14 +669,17 @@ php -r "echo bin2hex(random_bytes(32));"
 
 ## Customizing for Your SaaS
 
-**IMPORTANT:** For new projects, follow the "Starting a New Project from Template" workflow at the top of this guide. Provide requirements in `docs/project-requirements/` and schema in `database/schema/` before customizing.
+**IMPORTANT:** For new projects, follow the "Starting a New Project from Template" workflow at the top of this guide. Use SDLC-Docs-Engine outputs or provide requirements manually in `docs/project-requirements/` and schema in `database/schema/`.
 
-### Manual Customization Steps
+### Scaffolding Steps (After Requirements Are In Place)
 
-1. **Change branding:** Update "SaaS Seeder" to your app name throughout
-2. **Change session prefix:** `SESSION_PREFIX` in `src/config/session.php`
+1. **Change branding:** Update "SaaS Seeder" to your app name throughout (topbar `$appName`, page titles, footer)
+2. **Change session prefix:** `SESSION_PREFIX` in `src/config/session.php` (e.g., `'school_'`, `'restaurant_'`)
 3. **Add custom user types:** Modify `tbl_users.user_type` enum based on your domain
 4. **Add franchise fields:** Extend `tbl_franchises` table with domain-specific fields
-5. **Create your domain models:** Add to `src/` with PSR-4 autoloading
-6. **Apply custom schema:** Load project schema from `database/schema/core-schema.sql`
-7. **Update documentation:** Create project-specific CLAUDE.md and README.md
+5. **Apply custom schema:** Load project schema from `database/schema/core-schema.sql`
+6. **Create your domain models:** Add to `src/` with PSR-4 autoloading, `declare(strict_types=1)`, `final class`
+7. **Update this CLAUDE.md:** This file becomes the project's CLAUDE.md — add project-specific user types, business rules, custom tables, and development priorities
+8. **Update README.md:** Change title, description, setup steps to match the project
+9. **Delete scaffolding tools:** Remove `super-user-dev.php` after creating the first admin
+10. **Configure `.env`:** Set all required secrets, `APP_URL`, `CORS_ALLOWED_ORIGINS`, `SESSION_PREFIX`
