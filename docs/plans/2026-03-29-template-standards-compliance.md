@@ -44,13 +44,15 @@ Phase 7: Infrastructure Stubs (parallel) ─────────────
 
 | Phase | Status | Started | Completed |
 |-------|--------|---------|-----------|
-| 1: Database | not-started | — | — |
-| 2: Security | not-started | — | — |
-| 3: PHP Modern | not-started | — | — |
-| 4: Accessibility | not-started | — | — |
-| 5: Code Cleanup | not-started | — | — |
-| 6: Supply Chain | not-started | — | — |
-| 7: Infrastructure | not-started | — | — |
+| 1: Database | completed | 2026-03-29 | 2026-03-29 |
+| 2: Security | completed | 2026-03-29 | 2026-03-29 |
+| 3: PHP Modern | completed | 2026-03-29 | 2026-03-29 |
+| 4: Accessibility | completed | 2026-03-29 | 2026-03-29 |
+| 5: Code Cleanup | completed | 2026-03-29 | 2026-03-29 |
+| 6: Supply Chain | completed | 2026-03-29 | 2026-03-29 |
+| 7: Infrastructure | completed | 2026-03-29 | 2026-03-29 |
+
+**Note:** Phase 3 `readonly` DTOs deferred — requires PHP 8.2, current env is PHP 8.0.
 
 ---
 

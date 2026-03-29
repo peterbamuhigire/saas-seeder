@@ -1,15 +1,31 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Config;
 
-class Database {
-    private $host = 'localhost';
-    private $dbname = 'saas_seeder';
-    private $username = 'root';
-    private $password = '';
-    private $conn = null;
+final class Database
+{
+    private string $host = 'localhost';
+    private string $dbname = 'saas_seeder';
+    private string $username = 'root';
+    private string $password = '';
+    private ?\PDO $conn = null;
 
-    public function getConnection(): \PDO {
-        // Load from environment variables if available
+    private static ?self $instance = null;
+
+    /**
+     * Get a shared Database instance (reuses PDO connection).
+     */
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    public function getConnection(): \PDO
+    {
         $this->host = $_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? $this->host;
         $this->dbname = $_ENV['DB_NAME'] ?? $_SERVER['DB_NAME'] ?? $this->dbname;
         $this->username = $_ENV['DB_USER'] ?? $_SERVER['DB_USER'] ?? $this->username;
@@ -26,28 +42,34 @@ class Database {
                 $this->conn->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
             }
             return $this->conn;
-        } catch(\PDOException $e) {
-            throw new \Exception("Connection failed: " . $e->getMessage());
+        } catch (\PDOException $e) {
+            error_log('Database connection failed: ' . $e->getMessage());
+            throw new \RuntimeException('Database connection failed. Check server configuration.');
         }
     }
 
-    public function closeConnection() {
+    public function closeConnection(): void
+    {
         $this->conn = null;
     }
 
-    public function beginTransaction() {
+    public function beginTransaction(): bool
+    {
         return $this->conn->beginTransaction();
     }
 
-    public function commit() {
+    public function commit(): bool
+    {
         return $this->conn->commit();
     }
 
-    public function rollback() {
+    public function rollback(): bool
+    {
         return $this->conn->rollBack();
     }
 
-    public function lastInsertId() {
+    public function lastInsertId(): string|false
+    {
         return $this->conn->lastInsertId();
     }
 }

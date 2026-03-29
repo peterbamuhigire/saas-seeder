@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Auth\Services;
 
 use PDO;
@@ -7,7 +9,7 @@ use App\Auth\Services\{TokenService, PermissionService};
 use App\Auth\Helpers\{PasswordHelper, CookieHelper};
 use Exception;
 
-class AuthService
+final class AuthService
 {
     private PDO $db;
     private TokenService $tokenService;
@@ -199,7 +201,6 @@ class AuthService
                 
                 if (!isset($result['user_type']) || empty($result['user_type'])) {
                     $result['user_type'] = $userExtra['user_type'] ?? 'staff';
-                    error_log("✅ Retrieved user_type from tbl_users: " . $result['user_type']);
                 }
                 
                 if (!isset($result['force_password_change'])) {
@@ -217,21 +218,6 @@ class AuthService
             $franchiseData = $stmt->fetch(PDO::FETCH_ASSOC);
             $result['timezone'] = $franchiseData['timezone'] ?? 'Africa/Kampala';
             $result['language'] = $franchiseData['language'] ?? 'en';
-
-            // ✅ CRITICAL FIX: Fetch distributor_code for distributor users
-            if (($result['user_type'] ?? '') === 'distributor') {
-                // Correctly link user -> distributor via distributor_id
-                $stmt = $this->db->prepare("
-                    SELECT d.distributor_code 
-                    FROM tbl_users u
-                    JOIN tbl_distributors d ON u.distributor_id = d.id
-                    WHERE u.id = ?
-                ");
-                $stmt->execute([$userId]);
-                $distributorData = $stmt->fetch(PDO::FETCH_ASSOC);
-                $result['distributor_code'] = $distributorData['distributor_code'] ?? null;
-                error_log("✅ Retrieved distributor_code for user {$userId}: " . ($result['distributor_code'] ?? 'NULL'));
-            }
 
             return $result;
     

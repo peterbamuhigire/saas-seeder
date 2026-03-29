@@ -1,10 +1,12 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Auth\DTO;
 
 /**
  * Data Transfer Object for authentication results
  */
-class AuthResult
+final class AuthResult
 {
     private int $userId;
     private ?int $franchiseId;

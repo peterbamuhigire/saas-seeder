@@ -11,6 +11,7 @@ $appName = 'SaaS Seeder';
 $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
 ?>
 <header class="navbar navbar-expand-md d-print-none">
+  <a href="#main-body" class="visually-hidden-focusable position-absolute" style="z-index:9999">Skip to main content</a>
   <div class="container-xl">
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>

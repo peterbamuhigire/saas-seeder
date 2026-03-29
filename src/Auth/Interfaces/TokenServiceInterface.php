@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 // src/Auth/Interfaces/TokenServiceInterface.php
 
 namespace App\Auth\Interfaces;

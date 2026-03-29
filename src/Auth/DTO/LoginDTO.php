@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Auth\DTO;
 
-class LoginDTO
+final class LoginDTO
 {
     private string $username;
     private string $password;

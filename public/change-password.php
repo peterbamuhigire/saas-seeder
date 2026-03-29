@@ -78,7 +78,7 @@ $pageTitle = 'Change Password';
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><?php echo htmlspecialchars($pageTitle); ?> - SaaS Seeder</title>
   <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet">
   <style>
     @import url("https://rsms.me/inter/inter.css");
     .auth-split { min-height: 100vh; display: flex; }
@@ -114,7 +114,7 @@ $pageTitle = 'Change Password';
   </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/assets/vendor/sweetalert2/sweetalert2.min.js"></script>
 
 <div class="auth-split">
   <!-- Left panel -->
@@ -144,14 +144,14 @@ $pageTitle = 'Change Password';
       </p>
 
       <?php if (!empty($error)): ?>
-        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" style="border-radius:8px;">
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" aria-live="polite" style="border-radius:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <?php echo htmlspecialchars($error); ?>
         </div>
       <?php endif; ?>
 
       <?php if (!empty($success)): ?>
-        <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" style="border-radius:8px;">
+        <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" role="alert" aria-live="polite" style="border-radius:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
           <?php echo htmlspecialchars($success); ?> Redirecting...
         </div>
@@ -163,7 +163,7 @@ $pageTitle = 'Change Password';
         <div class="mb-3">
           <label for="current_password" class="form-label fw-medium">Current Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="current_password" id="current_password" class="form-control" autocomplete="current-password" required>
+            <input type="password" name="current_password" id="current_password" class="form-control" autocomplete="current-password" required aria-required="true">
             <span class="input-group-text">
               <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="current_password" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
@@ -175,7 +175,7 @@ $pageTitle = 'Change Password';
         <div class="mb-4">
           <label for="new_password" class="form-label fw-medium">New Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="new_password" id="new_password" class="form-control" autocomplete="new-password" required>
+            <input type="password" name="new_password" id="new_password" class="form-control" autocomplete="new-password" required aria-required="true">
             <span class="input-group-text">
               <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="new_password" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>

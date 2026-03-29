@@ -1,10 +1,12 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Auth\Helpers;
 
 /**
  * Helper class for secure cookie management
  */
-class CookieHelper 
+final class CookieHelper
 {
     private string $domain;
     private bool $secure;
@@ -96,39 +98,49 @@ class CookieHelper
     }
 
     /**
-     * Encrypt cookie value
+     * Encrypt cookie value using AES-256-GCM (authenticated encryption).
      */
-    private function encryptValue(string $value): string 
+    private function encryptValue(string $value): string
     {
-        $iv = random_bytes(16);
+        $iv = random_bytes(12); // GCM uses 12-byte nonce
+        $tag = '';
         $encrypted = openssl_encrypt(
             $value,
-            'AES-256-CBC',
+            'AES-256-GCM',
             $this->encryptionKey,
-            0,
-            $iv
+            OPENSSL_RAW_DATA,
+            $iv,
+            $tag
         );
-        
-        return base64_encode($iv . $encrypted);
+
+        return base64_encode($iv . $tag . $encrypted);
     }
 
     /**
-     * Decrypt cookie value
+     * Decrypt cookie value using AES-256-GCM with integrity verification.
      */
-    private function decryptValue(string $value): ?string 
+    private function decryptValue(string $value): ?string
     {
         try {
             $decoded = base64_decode($value);
-            $iv = substr($decoded, 0, 16);
-            $encrypted = substr($decoded, 16);
-            
-            return openssl_decrypt(
+            if ($decoded === false || strlen($decoded) < 28) {
+                return null;
+            }
+
+            $iv = substr($decoded, 0, 12);
+            $tag = substr($decoded, 12, 16);
+            $encrypted = substr($decoded, 28);
+
+            $result = openssl_decrypt(
                 $encrypted,
-                'AES-256-CBC',
+                'AES-256-GCM',
                 $this->encryptionKey,
-                0,
-                $iv
+                OPENSSL_RAW_DATA,
+                $iv,
+                $tag
             );
+
+            return $result !== false ? $result : null;
         } catch (\Exception $e) {
             return null;
         }

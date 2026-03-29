@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Auth\Helpers;
 
-class CSRFHelper
+final class CSRFHelper
 {
     /**
      * Generate a new CSRF token or return existing one

@@ -303,7 +303,7 @@ if (hasSession('user_type')) {
     <div class="access-denied-container">
         <div class="access-denied-card">
             <div class="access-denied-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-<?php echo $message['icon']; ?>" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-<?php echo htmlspecialchars($message['icon'], ENT_QUOTES, 'UTF-8'); ?>" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <?php if ($message['icon'] === 'shield-x'): ?>
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                         <path d="M13.252 20.601c-.408 .155 -.826 .288 -1.252 .399a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3a12 12 0 0 0 8.5 3a12 12 0 0 1 .117 6.34" />

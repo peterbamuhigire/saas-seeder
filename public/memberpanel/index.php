@@ -34,6 +34,9 @@ $pageTitle = 'My Dashboard';
                   This is the <strong>Member Portal</strong> where end users (students, customers, patients, etc.)
                   can access their data and self-service features. Build your member-facing pages here.
                 </p>
+                <div class="empty-action">
+                  <a href="/change-password.php" class="btn btn-primary">Update your password</a>
+                </div>
               </div>
             </div>
           </div>

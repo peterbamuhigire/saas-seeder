@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Auth\Services;
 
 use App\Auth\Interfaces\TokenServiceInterface;
@@ -6,7 +8,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use \PDO;
 
-class TokenService implements TokenServiceInterface 
+final class TokenService implements TokenServiceInterface
 {
     private string $secretKey;
     private string $algorithm;
@@ -49,7 +51,10 @@ class TokenService implements TokenServiceInterface
             // ignore - default pv=0
         }
 
+        $issuer = $_ENV['APP_URL'] ?? 'saas-seeder';
         $payload = [
+            'iss' => $issuer,
+            'aud' => $issuer,
             'iat' => $issuedAt,
             'exp' => $expire,
             'user_id' => $userId,
@@ -136,6 +141,12 @@ class TokenService implements TokenServiceInterface
 
             // Check expiry
             if ($decoded->exp <= time()) {
+                return false;
+            }
+
+            // Verify issuer and audience
+            $expectedIssuer = $_ENV['APP_URL'] ?? 'saas-seeder';
+            if (($decoded->iss ?? '') !== $expectedIssuer || ($decoded->aud ?? '') !== $expectedIssuer) {
                 return false;
             }
 

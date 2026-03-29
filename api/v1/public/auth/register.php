@@ -14,7 +14,6 @@ require_once __DIR__ . '/../../../../bootstrap.php';
 
 use App\Auth\Services\UserService;
 use App\Config\Database;
-use PDO;
 
 // --- Method guard ---
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

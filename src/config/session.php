@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Session Configuration and Helper Functions
  *
@@ -20,11 +22,16 @@ function initSession(): void {
 
         // Only set secure cookie if using HTTPS (allows localhost HTTP development)
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                   || $_SERVER['SERVER_PORT'] == 443;
+                   || (int)($_SERVER['SERVER_PORT'] ?? 0) === 443;
         ini_set('session.cookie_secure', $isHttps ? '1' : '0');
 
         ini_set('session.cookie_samesite', 'Strict');
         ini_set('session.gc_maxlifetime', '1800'); // 30 minutes
+        ini_set('session.use_strict_mode', '1');
+        ini_set('session.use_only_cookies', '1');
+        ini_set('session.use_trans_sid', '0');
+        ini_set('session.sid_length', '48');
+        ini_set('session.sid_bits_per_character', '6');
         session_start();
     }
 }
@@ -46,7 +53,7 @@ function setSession(string $key, $value): void {
  * @param mixed $default Default value if not set
  * @return mixed
  */
-function getSession(string $key, $default = null) {
+function getSession(string $key, mixed $default = null): mixed {
     return $_SESSION[SESSION_PREFIX . $key] ?? $default;
 }
 

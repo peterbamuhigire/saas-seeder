@@ -1,9 +1,11 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Auth\Services;
 
 use PDO;
 
-class PermissionService
+final class PermissionService
 {
     private PDO $db;
 

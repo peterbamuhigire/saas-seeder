@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Validate input
     $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+    $password = $_POST['password'] ?? '';
     $rememberMe = isset($_POST['remember']);
 
     if (empty($username) || empty($password)) {
@@ -136,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Sign In — SaaS Seeder</title>
   <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet">
   <style>
     @import url("https://rsms.me/inter/inter.css");
     *, *::before, *::after { box-sizing: border-box; }
@@ -294,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/assets/vendor/sweetalert2/sweetalert2.min.js"></script>
 
 <?php if ($loginSuccess): ?>
 <!-- ── Success state ── -->
@@ -343,14 +343,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <p class="subtitle">Enter your credentials to access your account.</p>
 
       <?php if (!empty($error)): ?>
-        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" style="border-radius:8px;">
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" aria-live="polite" style="border-radius:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
           <div><?php echo htmlspecialchars($error); ?></div>
         </div>
       <?php endif; ?>
 
       <?php if (!empty($success)): ?>
-        <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" role="alert" style="border-radius:8px;">
+        <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" role="alert" aria-live="polite" style="border-radius:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
           <div><?php echo htmlspecialchars($success); ?></div>
         </div>
@@ -367,6 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             placeholder=" "
             autocomplete="username"
             required
+            aria-required="true"
             value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
           >
           <label for="username">Username or Email</label>
@@ -381,6 +382,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               placeholder=" "
               autocomplete="current-password"
               required
+              aria-required="true"
             >
             <label for="password">Password</label>
             <button type="button" class="pw-toggle" id="togglePassword" aria-label="Toggle password visibility">

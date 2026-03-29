@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Create Super Admin [DEV] — SaaS Seeder</title>
   <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet">
   <style>
     @import url("https://rsms.me/inter/inter.css");
     html, body { height: 100%; margin: 0; }
@@ -170,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/assets/vendor/sweetalert2/sweetalert2.min.js"></script>
 
 <?php if ($createSuccess): ?>
 <div class="auth-split" style="justify-content:center;align-items:center;background:#f9fafb;">
@@ -237,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <p class="subtitle">Fill in the details below to create the first super admin account.</p>
 
       <?php if (!empty($error)): ?>
-        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" style="border-radius:8px;">
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" aria-live="polite" style="border-radius:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <?php echo htmlspecialchars($error); ?>
         </div>
@@ -249,29 +249,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="row g-3 mb-3">
           <div class="col-6">
             <label for="first_name" class="form-label fw-medium">First Name</label>
-            <input type="text" name="first_name" id="first_name" class="form-control" autocomplete="given-name" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
+            <input type="text" name="first_name" id="first_name" class="form-control" autocomplete="given-name" required aria-required="true" value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
           </div>
           <div class="col-6">
             <label for="last_name" class="form-label fw-medium">Last Name</label>
-            <input type="text" name="last_name" id="last_name" class="form-control" autocomplete="family-name" required value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>">
+            <input type="text" name="last_name" id="last_name" class="form-control" autocomplete="family-name" required aria-required="true" value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>">
           </div>
         </div>
 
         <div class="mb-3">
           <label for="username" class="form-label fw-medium">Username</label>
-          <input type="text" name="username" id="username" class="form-control" autocomplete="username" required value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+          <input type="text" name="username" id="username" class="form-control" autocomplete="username" required aria-required="true" value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
           <small class="text-muted">Used to sign in</small>
         </div>
 
         <div class="mb-3">
           <label for="email" class="form-label fw-medium">Email Address</label>
-          <input type="email" name="email" id="email" class="form-control" autocomplete="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+          <input type="email" name="email" id="email" class="form-control" autocomplete="email" required aria-required="true" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
         </div>
 
         <div class="mb-3">
           <label for="password" class="form-label fw-medium">Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="password" id="password" class="form-control" autocomplete="new-password" required>
+            <input type="password" name="password" id="password" class="form-control" autocomplete="new-password" required aria-required="true">
             <span class="input-group-text p-0 border-0 bg-transparent">
               <button type="button" class="btn btn-link text-muted px-3" id="togglePassword" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
@@ -288,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="mb-4">
           <label for="confirm_password" class="form-label fw-medium">Confirm Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="confirm_password" id="confirm_password" class="form-control" autocomplete="new-password" required>
+            <input type="password" name="confirm_password" id="confirm_password" class="form-control" autocomplete="new-password" required aria-required="true">
             <span class="input-group-text p-0 border-0 bg-transparent">
               <button type="button" class="btn btn-link text-muted px-3" id="toggleConfirm" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>

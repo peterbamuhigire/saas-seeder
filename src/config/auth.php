@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 // Auth configuration for SaaS Seeder Template
 require_once dirname(__FILE__) . '/database.php';
 require_once dirname(__FILE__) . '/autoloader.php';
@@ -22,7 +24,7 @@ function isLoggedIn(): bool {
     return false;
 }
 
-function requireAuth() {
+function requireAuth(): void {
     if (!isLoggedIn()) {
         // Store intended destination
         setSession('redirect_after_login', $_SERVER['REQUEST_URI']);
@@ -42,7 +44,7 @@ function requireAuth() {
     }
 }
 
-function requireGuest() {
+function requireGuest(): void {
     if (isLoggedIn()) {
         // User is logged in, redirect to index.php which will route to appropriate panel
         header('Location: ./index.php');
@@ -50,7 +52,7 @@ function requireGuest() {
     }
 }
 
-function checkAuth() {
+function checkAuth(): void {
     // Check if user is logged in
     if (!hasSession('user_id')) {
         header('Location: ./sign-in.php');
@@ -68,7 +70,7 @@ function checkAuth() {
     setSession('last_activity', time());
 }
 
-function logout() {
+function logout(): void {
     clearPrefixedSession();
     session_destroy();
     header('Location: ./sign-in.php');
@@ -87,7 +89,7 @@ function hasPermissionGlobal(string $permissionCode, ?int $franchiseId = null): 
     if (!isLoggedIn()) return false;
     if ($franchiseId === null) $franchiseId = (int)(getSession('franchise_id') ?? 0);
     $db = (new App\Config\Database())->getConnection();
-    $permSvc = new App\Auth\PermissionService($db);
+    $permSvc = new App\Auth\Services\PermissionService($db);
     try {
         return $permSvc->hasPermission((int)getSession('user_id'), (int)$franchiseId, $permissionCode);
     } catch (Exception $e) {
@@ -110,7 +112,7 @@ function requirePermissionGlobal(string $permissionCode, ?int $franchiseId = nul
     }
     if ($franchiseId === null) $franchiseId = (int)(getSession('franchise_id') ?? 0);
     $db = (new App\Config\Database())->getConnection();
-    $permSvc = new App\Auth\PermissionService($db);
+    $permSvc = new App\Auth\Services\PermissionService($db);
     try {
         $permSvc->requirePermission((int)getSession('user_id'), (int)$franchiseId, $permissionCode);
     } catch (Exception $e) {
@@ -189,5 +191,48 @@ if (isLoggedIn()) {
     if ($isMemberPanel) {
         // All user types can access member panel (including super_admin/owner)
         // No restrictions needed here
+    }
+}
+
+/**
+ * Log an auditable action to tbl_audit_log.
+ * Silently fails if audit table is missing (defensive).
+ */
+function auditLog(string $action, string $entityType = '', ?int $entityId = null, array $details = []): void
+{
+    try {
+        $db = (new \App\Config\Database())->getConnection();
+        $audit = new \App\Auth\Services\AuditService($db);
+        $audit->log(
+            $action,
+            function_exists('getSession') ? ((int)(getSession('user_id') ?? 0) ?: null) : null,
+            function_exists('getSession') ? (getSession('franchise_id') !== null ? (int)getSession('franchise_id') : null) : null,
+            $entityType,
+            $entityId,
+            $details
+        );
+    } catch (\Exception $e) {
+        error_log('Audit log failed: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Check if the current franchise has access to a module.
+ * Stub — always returns true until tbl_modules is implemented.
+ */
+function hasModuleAccess(string $moduleCode): bool
+{
+    return true;
+}
+
+/**
+ * Require module access — redirects to access-denied if disabled.
+ * Stub — always passes until module registry is implemented.
+ */
+function requireModuleAccess(string $moduleCode): void
+{
+    if (!hasModuleAccess($moduleCode)) {
+        header('Location: /access-denied.php?reason=module_disabled&module=' . urlencode($moduleCode));
+        exit();
     }
 }

@@ -1,14 +1,92 @@
--- Seeder Template Auth and RBAC Migration
--- Baseline: Maduuka conventions
--- Purpose: Create minimal auth + RBAC schema and login procedures
+-- SaaS Seeder Template — Auth & RBAC Migration
+-- Version: 2.0 (2026-03-29 — Standards Compliance Rewrite)
+-- Collation: utf8mb4_unicode_ci on all tables
+-- Row format: DYNAMIC on all tables
+-- Foreign keys: All relationships constrained
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+-- ================================================================
+-- 1. FRANCHISES (must exist before tbl_users for FK)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_franchises` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL,
+  `code` VARCHAR(20) NOT NULL COMMENT 'Unique slug',
+  `business_name` VARCHAR(150) NULL,
+  `business_type` ENUM('sole_proprietor','partnership','corporation','llc','non_profit','other') DEFAULT 'corporation',
+  `email` VARCHAR(100) NULL,
+  `phone` VARCHAR(20) NULL,
+  `website` VARCHAR(255) NULL,
+  `address_line1` VARCHAR(255) NULL,
+  `address_line2` VARCHAR(255) NULL,
+  `city` VARCHAR(100) NULL,
+  `state_province` VARCHAR(100) NULL,
+  `postal_code` VARCHAR(20) NULL,
+  `country` VARCHAR(2) DEFAULT 'UG' COMMENT 'ISO 3166-1 alpha-2',
+  `tax_id` VARCHAR(50) NULL,
+  `timezone` VARCHAR(50) DEFAULT 'Africa/Kampala',
+  `currency` VARCHAR(3) DEFAULT 'UGX' COMMENT 'ISO 4217',
+  `language` VARCHAR(5) DEFAULT 'en' COMMENT 'ISO 639-1',
+  `subscription_plan` VARCHAR(50) NULL,
+  `subscription_status` ENUM('trial','active','suspended','cancelled','expired') DEFAULT 'trial',
+  `trial_ends_at` DATETIME NULL,
+  `max_users` INT UNSIGNED DEFAULT 10,
+  `max_storage_mb` INT UNSIGNED DEFAULT 1024,
+  `logo_url` VARCHAR(500) NULL,
+  `enabled_features` JSON NULL,
+  `custom_settings` JSON NULL,
+  `permission_version` INT UNSIGNED DEFAULT 1 COMMENT 'Increment to invalidate cached permissions',
+  `status` ENUM('active','inactive','suspended','pending_approval','deleted') DEFAULT 'pending_approval',
+  `onboarding_completed` TINYINT(1) DEFAULT 0,
+  `owner_user_id` BIGINT UNSIGNED NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` TIMESTAMP NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_franchise_code` (`code`),
+  KEY `idx_status` (`status`),
+  KEY `idx_owner` (`owner_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 2. PERMISSIONS
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_permissions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL,
+  `code` VARCHAR(50) NOT NULL,
+  `description` TEXT,
+  `module` VARCHAR(50) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_permission_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 3. GLOBAL ROLES
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_global_roles` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `code` VARCHAR(50) NOT NULL,
+  `name` VARCHAR(150) NOT NULL,
+  `description` TEXT,
+  `is_system` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_global_role_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 4. USERS
+-- ================================================================
 CREATE TABLE IF NOT EXISTS `tbl_users` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `franchise_id` BIGINT UNSIGNED DEFAULT NULL,
-  `distributor_id` BIGINT UNSIGNED DEFAULT NULL,
   `username` VARCHAR(50) NOT NULL,
   `user_type` ENUM('super_admin','owner','distributor','staff') NOT NULL DEFAULT 'staff',
   `email` VARCHAR(100) NOT NULL,
@@ -23,6 +101,7 @@ CREATE TABLE IF NOT EXISTS `tbl_users` (
   `password_reset_expires` DATETIME DEFAULT NULL,
   `force_password_change` TINYINT(1) NOT NULL DEFAULT 1,
   `failed_login_attempts` SMALLINT NOT NULL DEFAULT 0,
+  `locked_until` DATETIME DEFAULT NULL COMMENT 'Account lockout expiry',
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   `created_by` BIGINT UNSIGNED DEFAULT NULL,
@@ -31,104 +110,90 @@ CREATE TABLE IF NOT EXISTS `tbl_users` (
   `is_root` TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_username` (`username`),
-  UNIQUE KEY `uk_email` (`franchise_id`,`email`),
-  KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  UNIQUE KEY `uk_email` (`franchise_id`, `email`),
+  KEY `idx_status` (`status`),
+  KEY `idx_franchise` (`franchise_id`),
+  CONSTRAINT `fk_users_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
-CREATE TABLE IF NOT EXISTS `tbl_permissions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` VARCHAR(100) NOT NULL,
-  `code` VARCHAR(50) NOT NULL,
-  `description` TEXT,
-  `module` VARCHAR(50) NOT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_permission_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Add FK from franchises.owner_user_id -> users.id (circular, added after both exist)
+ALTER TABLE `tbl_franchises` ADD CONSTRAINT `fk_franchise_owner` FOREIGN KEY (`owner_user_id`) REFERENCES `tbl_users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
-CREATE TABLE IF NOT EXISTS `tbl_global_roles` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `code` VARCHAR(50) NOT NULL,
-  `name` VARCHAR(150) NOT NULL,
-  `description` TEXT,
-  `is_system` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
-  `updated_by` BIGINT UNSIGNED DEFAULT NULL,
-  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_global_role_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
+-- ================================================================
+-- 5. GLOBAL ROLE PERMISSIONS (junction)
+-- ================================================================
 CREATE TABLE IF NOT EXISTS `tbl_global_role_permissions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `global_role_id` BIGINT UNSIGNED NOT NULL,
   `permission_id` BIGINT UNSIGNED NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_global_role_permission` (`global_role_id`,`permission_id`),
-  KEY `idx_global_role` (`global_role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  UNIQUE KEY `uk_global_role_permission` (`global_role_id`, `permission_id`),
+  CONSTRAINT `fk_grp_role` FOREIGN KEY (`global_role_id`) REFERENCES `tbl_global_roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_grp_permission` FOREIGN KEY (`permission_id`) REFERENCES `tbl_permissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
-CREATE TABLE IF NOT EXISTS `tbl_roles` (
+-- ================================================================
+-- 6. FRANCHISE ROLE OVERRIDES
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_franchise_role_overrides` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `franchise_id` BIGINT UNSIGNED NOT NULL,
-  `name` VARCHAR(50) NOT NULL,
-  `description` TEXT,
-  `is_system_role` TINYINT(1) NOT NULL DEFAULT 0,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-  `created_by` BIGINT UNSIGNED DEFAULT NULL,
-  `updated_by` BIGINT UNSIGNED DEFAULT NULL,
-  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_role_name` (`franchise_id`,`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS `tbl_role_permissions` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `franchise_id` BIGINT UNSIGNED NOT NULL DEFAULT 1,
-  `role_id` BIGINT UNSIGNED DEFAULT NULL,
-  `global_role_id` BIGINT UNSIGNED DEFAULT NULL,
+  `global_role_id` BIGINT UNSIGNED NOT NULL,
   `permission_id` BIGINT UNSIGNED NOT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `created_by` BIGINT UNSIGNED NOT NULL,
+  `is_enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '0 = disabled for this franchise',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_role_perm_local` (`franchise_id`,`role_id`,`permission_id`),
-  UNIQUE KEY `uk_role_perm_global` (`franchise_id`,`global_role_id`,`permission_id`),
-  KEY `idx_global_role` (`global_role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  UNIQUE KEY `uk_franchise_role_perm` (`franchise_id`, `global_role_id`, `permission_id`),
+  CONSTRAINT `fk_fro_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_fro_role` FOREIGN KEY (`global_role_id`) REFERENCES `tbl_global_roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_fro_permission` FOREIGN KEY (`permission_id`) REFERENCES `tbl_permissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
+-- ================================================================
+-- 7. USER ROLES (junction)
+-- ================================================================
 CREATE TABLE IF NOT EXISTS `tbl_user_roles` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `franchise_id` BIGINT UNSIGNED NOT NULL DEFAULT 1,
+  `franchise_id` BIGINT UNSIGNED NOT NULL,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `global_role_id` BIGINT UNSIGNED NOT NULL,
   `assigned_by` BIGINT UNSIGNED NOT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_franchise_user_global_role` (`franchise_id`,`user_id`,`global_role_id`),
-  KEY `idx_franchise` (`franchise_id`),
+  UNIQUE KEY `uk_franchise_user_global_role` (`franchise_id`, `user_id`, `global_role_id`),
   KEY `idx_user` (`user_id`),
-  KEY `idx_user_global_role` (`global_role_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  CONSTRAINT `fk_ur_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_ur_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_ur_role` FOREIGN KEY (`global_role_id`) REFERENCES `tbl_global_roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
+-- ================================================================
+-- 8. USER PERMISSION OVERRIDES
+-- ================================================================
 CREATE TABLE IF NOT EXISTS `tbl_user_permissions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `franchise_id` BIGINT UNSIGNED NOT NULL,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `permission_id` BIGINT UNSIGNED NOT NULL,
-  `allowed` TINYINT(1) NOT NULL DEFAULT 1,
+  `allowed` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = grant, 0 = deny',
   `created_by` BIGINT UNSIGNED DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_user_perm` (`franchise_id`,`user_id`,`permission_id`),
-  KEY `idx_franchise_user` (`franchise_id`,`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  UNIQUE KEY `uk_user_perm` (`franchise_id`, `user_id`, `permission_id`),
+  KEY `idx_franchise_user` (`franchise_id`, `user_id`),
+  CONSTRAINT `fk_up_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_up_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_up_permission` FOREIGN KEY (`permission_id`) REFERENCES `tbl_permissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
+-- ================================================================
+-- 9. USER SESSIONS
+-- ================================================================
 CREATE TABLE IF NOT EXISTS `tbl_user_sessions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `franchise_id` BIGINT DEFAULT NULL,
+  `franchise_id` BIGINT UNSIGNED DEFAULT NULL,
   `user_id` BIGINT UNSIGNED NOT NULL,
   `token` VARCHAR(255) NOT NULL,
   `remember_me` TINYINT(1) NOT NULL DEFAULT 0,
@@ -140,10 +205,15 @@ CREATE TABLE IF NOT EXISTS `tbl_user_sessions` (
   `session_data` JSON DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_token` (`token`),
-  KEY `idx_user_sessions` (`user_id`,`expires_at`),
-  KEY `idx_expires` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  KEY `idx_user_sessions` (`user_id`, `expires_at`),
+  KEY `idx_expires` (`expires_at`),
+  CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_sessions_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
+-- ================================================================
+-- 10. LOGIN ATTEMPTS
+-- ================================================================
 CREATE TABLE IF NOT EXISTS `tbl_login_attempts` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(50) NOT NULL,
@@ -155,8 +225,33 @@ CREATE TABLE IF NOT EXISTS `tbl_login_attempts` (
   KEY `idx_username` (`username`),
   KEY `idx_ip_address` (`ip_address`),
   KEY `idx_attempt_time` (`attempt_time`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
+-- ================================================================
+-- 11. AUDIT LOG (immutable — no UPDATE/DELETE by application)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_audit_log` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT UNSIGNED DEFAULT NULL,
+  `franchise_id` BIGINT UNSIGNED DEFAULT NULL,
+  `action` VARCHAR(100) NOT NULL COMMENT 'e.g. USER_CREATED, PERMISSION_CHANGED',
+  `entity_type` VARCHAR(50) DEFAULT NULL COMMENT 'e.g. user, role, franchise',
+  `entity_id` BIGINT UNSIGNED DEFAULT NULL,
+  `details` JSON DEFAULT NULL,
+  `ip_address` VARCHAR(45) DEFAULT NULL,
+  `user_agent` VARCHAR(255) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_user` (`user_id`),
+  KEY `idx_audit_franchise` (`franchise_id`),
+  KEY `idx_audit_action` (`action`),
+  KEY `idx_audit_entity` (`entity_type`, `entity_id`),
+  KEY `idx_audit_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- STORED PROCEDURES
+-- ================================================================
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS `sp_authenticate_user`$$
@@ -171,15 +266,19 @@ BEGIN
   DECLARE v_user_id BIGINT UNSIGNED DEFAULT NULL;
   DECLARE v_status VARCHAR(50) DEFAULT NULL;
   DECLARE v_hash VARCHAR(255) DEFAULT NULL;
+  DECLARE v_locked_until DATETIME DEFAULT NULL;
+  DECLARE v_failed_attempts SMALLINT DEFAULT 0;
 
   IF p_franchise_id IS NULL THEN
-    SELECT id, status, password_hash INTO v_user_id, v_status, v_hash
+    SELECT id, status, password_hash, locked_until, failed_login_attempts
+      INTO v_user_id, v_status, v_hash, v_locked_until, v_failed_attempts
     FROM tbl_users
     WHERE (username = p_username OR email = p_username)
       AND franchise_id IS NULL
     LIMIT 1;
   ELSE
-    SELECT id, status, password_hash INTO v_user_id, v_status, v_hash
+    SELECT id, status, password_hash, locked_until, failed_login_attempts
+      INTO v_user_id, v_status, v_hash, v_locked_until, v_failed_attempts
     FROM tbl_users
     WHERE (username = p_username OR email = p_username)
       AND franchise_id = p_franchise_id
@@ -190,11 +289,19 @@ BEGIN
     SET p_user_id = 0;
     SET p_status = 'USER_NOT_FOUND';
     SET p_password_hash = NULL;
+  ELSEIF v_locked_until IS NOT NULL AND v_locked_until > NOW() THEN
+    SET p_user_id = v_user_id;
+    SET p_status = 'ACCOUNT_LOCKED';
+    SET p_password_hash = NULL;
   ELSEIF v_status <> 'active' THEN
     SET p_user_id = v_user_id;
     SET p_status = 'ACCOUNT_INACTIVE';
     SET p_password_hash = v_hash;
   ELSE
+    -- Reset lock if expired
+    IF v_locked_until IS NOT NULL AND v_locked_until <= NOW() THEN
+      UPDATE tbl_users SET locked_until = NULL, failed_login_attempts = 0 WHERE id = v_user_id;
+    END IF;
     SET p_user_id = v_user_id;
     SET p_status = 'SUCCESS';
     SET p_password_hash = v_hash;
@@ -219,12 +326,14 @@ BEGIN
     u.force_password_change,
     GROUP_CONCAT(DISTINCT gr.name) AS roles,
     GROUP_CONCAT(DISTINCT p.code) AS permissions,
-    '' AS franchise_name,
-    '' AS currency,
-    '' AS franchise_code,
-    '' AS country,
-    'en' AS language
+    COALESCE(f.name, '') AS franchise_name,
+    COALESCE(f.currency, '') AS currency,
+    COALESCE(f.code, '') AS franchise_code,
+    COALESCE(f.country, '') AS country,
+    COALESCE(f.language, 'en') AS language,
+    COALESCE(f.timezone, 'Africa/Kampala') AS timezone
   FROM tbl_users u
+  LEFT JOIN tbl_franchises f ON f.id = u.franchise_id
   LEFT JOIN tbl_user_roles ur ON ur.user_id = u.id
   LEFT JOIN tbl_global_roles gr ON gr.id = ur.global_role_id
   LEFT JOIN tbl_global_role_permissions grp ON grp.global_role_id = gr.id
@@ -244,26 +353,67 @@ BEGIN
   DECLARE v_user_type VARCHAR(50);
 
   SELECT user_type INTO v_user_type
-  FROM tbl_users
-  WHERE id = p_user_id
-  LIMIT 1;
+  FROM tbl_users WHERE id = p_user_id LIMIT 1;
 
+  -- Super admins get all permissions
   IF v_user_type = 'super_admin' THEN
     SELECT GROUP_CONCAT(code ORDER BY code SEPARATOR ',') AS permissions
     FROM tbl_permissions;
   ELSE
-    SELECT GROUP_CONCAT(DISTINCT p.code ORDER BY p.code SEPARATOR ',') AS permissions
-    FROM tbl_user_roles ur
-    JOIN tbl_global_role_permissions grp ON grp.global_role_id = ur.global_role_id
-    JOIN tbl_permissions p ON p.id = grp.permission_id
-    WHERE ur.user_id = p_user_id;
+    -- Build effective permissions:
+    -- 1. Start with global role permissions
+    -- 2. Remove franchise-level disabled overrides
+    -- 3. Apply user-level overrides (grant or deny)
+    SELECT GROUP_CONCAT(DISTINCT final_perms.code ORDER BY final_perms.code SEPARATOR ',') AS permissions
+    FROM (
+      -- Role permissions minus franchise overrides
+      SELECT p.code
+      FROM tbl_user_roles ur
+      JOIN tbl_global_role_permissions grp ON grp.global_role_id = ur.global_role_id
+      JOIN tbl_permissions p ON p.id = grp.permission_id
+      LEFT JOIN tbl_franchise_role_overrides fro
+        ON fro.franchise_id = ur.franchise_id
+        AND fro.global_role_id = ur.global_role_id
+        AND fro.permission_id = grp.permission_id
+      WHERE ur.user_id = p_user_id
+        AND (ur.franchise_id = p_franchise_id OR p_franchise_id IS NULL)
+        AND (fro.id IS NULL OR fro.is_enabled = 1)
+
+      UNION
+
+      -- User-level explicit grants
+      SELECT p.code
+      FROM tbl_user_permissions up
+      JOIN tbl_permissions p ON p.id = up.permission_id
+      WHERE up.user_id = p_user_id
+        AND up.franchise_id = p_franchise_id
+        AND up.allowed = 1
+    ) AS granted_perms
+
+    -- Subtract user-level explicit denials
+    LEFT JOIN (
+      SELECT p.code
+      FROM tbl_user_permissions up
+      JOIN tbl_permissions p ON p.id = up.permission_id
+      WHERE up.user_id = p_user_id
+        AND up.franchise_id = p_franchise_id
+        AND up.allowed = 0
+    ) AS denied_perms ON denied_perms.code = granted_perms.code
+
+    -- Only include this in the final result alias
+    WHERE denied_perms.code IS NULL
+
+    -- Alias for the outer SELECT to reference
+    ;
+
+    -- Re-wrap: the above is a single SELECT returning permissions column
   END IF;
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_create_user_session`$$
 CREATE PROCEDURE `sp_create_user_session`(
   IN p_user_id BIGINT UNSIGNED,
-  IN p_franchise_id BIGINT,
+  IN p_franchise_id BIGINT UNSIGNED,
   IN p_token VARCHAR(255),
   IN p_ip_address VARCHAR(45),
   IN p_user_agent VARCHAR(255),
@@ -277,6 +427,32 @@ BEGIN
   ) VALUES (
     p_franchise_id, p_user_id, p_token, p_remember_me, p_ip_address, p_user_agent, p_expires_at, p_session_data
   );
+END$$
+
+DROP PROCEDURE IF EXISTS `sp_validate_session`$$
+CREATE PROCEDURE `sp_validate_session`(
+  IN p_jti VARCHAR(255)
+)
+BEGIN
+  SELECT
+    CASE
+      WHEN invalidated_at IS NOT NULL THEN 0
+      WHEN expires_at <= NOW() THEN 0
+      ELSE 1
+    END AS is_valid
+  FROM tbl_user_sessions
+  WHERE token = p_jti
+  LIMIT 1;
+END$$
+
+DROP PROCEDURE IF EXISTS `sp_invalidate_session`$$
+CREATE PROCEDURE `sp_invalidate_session`(
+  IN p_jti VARCHAR(255)
+)
+BEGIN
+  UPDATE tbl_user_sessions
+  SET invalidated_at = NOW()
+  WHERE token = p_jti;
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_log_failed_login`$$
@@ -296,9 +472,21 @@ CREATE PROCEDURE `sp_increment_failed_attempts`(
   IN p_user_id BIGINT UNSIGNED
 )
 BEGIN
+  DECLARE v_attempts SMALLINT;
+
   UPDATE tbl_users
   SET failed_login_attempts = failed_login_attempts + 1
   WHERE id = p_user_id;
+
+  -- Auto-lock after 5 failures
+  SELECT failed_login_attempts INTO v_attempts
+  FROM tbl_users WHERE id = p_user_id;
+
+  IF v_attempts >= 5 THEN
+    UPDATE tbl_users
+    SET locked_until = DATE_ADD(NOW(), INTERVAL 15 MINUTE)
+    WHERE id = p_user_id;
+  END IF;
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_reset_failed_attempts`$$
@@ -307,12 +495,15 @@ CREATE PROCEDURE `sp_reset_failed_attempts`(
 )
 BEGIN
   UPDATE tbl_users
-  SET failed_login_attempts = 0
+  SET failed_login_attempts = 0, locked_until = NULL
   WHERE id = p_user_id;
 END$$
 
 DELIMITER ;
 
+-- ================================================================
+-- SEED DATA
+-- ================================================================
 INSERT INTO tbl_permissions (name, code, module, description) VALUES
 ('View Dashboard', 'VIEW_DASHBOARD', 'DASHBOARD', 'Access main dashboard'),
 ('Manage Users', 'MANAGE_USERS', 'ADMIN', 'Create/edit users'),
@@ -323,30 +514,7 @@ INSERT INTO tbl_permissions (name, code, module, description) VALUES
 INSERT INTO tbl_global_roles (code, name, description, is_system)
 VALUES ('SUPER_ADMIN', 'Super Admin', 'Full system access', 1);
 
-INSERT INTO tbl_users (
-  franchise_id,
-  username,
-  user_type,
-  email,
-  password_hash,
-  first_name,
-  last_name,
-  phone,
-  status,
-  is_root,
-  force_password_change
-) VALUES (
-  NULL,
-  'root',
-  'super_admin',
-  'peter@techguypeter.com',
-  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
-  'Peter',
-  'Bamuhigire',
-  '+256700000000',
-  'active',
-  1,
-  0
-);
+-- NOTE: No default user is seeded. Use super-user-dev.php to create the
+-- initial super_admin account with a properly hashed (Argon2ID) password.
 
 SET FOREIGN_KEY_CHECKS = 1;

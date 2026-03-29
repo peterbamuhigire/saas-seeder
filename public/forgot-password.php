@@ -21,7 +21,7 @@ $loginBackground = UiHelper::getRandomLoginBackground();
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Forgot Password — SaaS Seeder</title>
   <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet">
   <style>
     @import url("https://rsms.me/inter/inter.css");
     html, body { height: 100%; margin: 0; }
@@ -48,7 +48,7 @@ $loginBackground = UiHelper::getRandomLoginBackground();
   </style>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/assets/vendor/sweetalert2/sweetalert2.min.js"></script>
 
 <div class="auth-split">
   <!-- Left panel -->
@@ -81,7 +81,7 @@ $loginBackground = UiHelper::getRandomLoginBackground();
       <form id="forgotPasswordForm">
         <div class="mb-4">
           <label for="identifier" class="form-label fw-medium">Email or Username</label>
-          <input type="text" class="form-control" id="identifier" name="identifier" autocomplete="username">
+          <input type="text" class="form-control" id="identifier" name="identifier" autocomplete="username" required aria-required="true">
         </div>
         <button type="submit" class="btn btn-primary w-100 btn-submit">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>

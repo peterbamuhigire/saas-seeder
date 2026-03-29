@@ -1,11 +1,12 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Helpers;
 
 /**
  * UiHelper - UI-related utility functions
  */
-class UiHelper
+final class UiHelper
 {
     /**
      * Get a random login background image from the login-bg directory
