@@ -356,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
       <?php endif; ?>
 
-      <form action="./sign-in.php" method="POST" autocomplete="off" novalidate id="loginForm">
+      <form action="./sign-in.php" method="POST" id="loginForm">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
 
         <div class="form-floating-label">
@@ -365,7 +365,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             name="username"
             id="username"
             placeholder=" "
-            autocomplete="off"
+            autocomplete="username"
             required
             value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>"
           >
@@ -379,7 +379,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               name="password"
               id="password"
               placeholder=" "
-              autocomplete="off"
+              autocomplete="current-password"
               required
             >
             <label for="password">Password</label>

@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../src/config/auth.php';
 requireAuth();
 
 $panel = 'member';
-$pageTitle = 'Member Panel';
+$pageTitle = 'My Dashboard';
 ?>
 <!doctype html>
 <html lang="en">
@@ -20,17 +20,29 @@ $pageTitle = 'Member Panel';
     <div class="page-wrapper">
       <div class="page-header d-print-none">
         <div class="container-xl">
-          <h2 class="page-title">Member Dashboard</h2>
+          <h2 class="page-title">My Dashboard</h2>
         </div>
       </div>
       <div class="page-body">
         <div class="container-xl">
+
           <div class="card">
-            <div class="card-body">Member panel placeholder.</div>
+            <div class="card-body">
+              <div class="empty">
+                <p class="empty-title">Welcome to your dashboard</p>
+                <p class="empty-subtitle text-secondary">
+                  This is the <strong>Member Portal</strong> where end users (students, customers, patients, etc.)
+                  can access their data and self-service features. Build your member-facing pages here.
+                </p>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
-      <?php include __DIR__ . '/../includes/footer.php'; ?>
+      <footer class="footer footer-transparent d-print-none">
+        <?php include __DIR__ . '/../includes/footer.php'; ?>
+      </footer>
     </div>
   </div>
   <?php include __DIR__ . '/../includes/foot.php'; ?>

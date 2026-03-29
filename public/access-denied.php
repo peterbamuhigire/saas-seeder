@@ -42,11 +42,12 @@ if (hasSession('user_type')) {
         case 'super_admin':
             $dashboardUrl = './adminpanel/';
             break;
-        case 'distributor':
-            $dashboardUrl = './distributorpanel/';
+        case 'owner':
+        case 'staff':
+            $dashboardUrl = './dashboard.php';
             break;
         default:
-            $dashboardUrl = './index.php';
+            $dashboardUrl = './memberpanel/';
     }
 }
 ?>
@@ -56,7 +57,7 @@ if (hasSession('user_type')) {
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
-    <title>Access Denied - Maduuka</title>
+    <title>Access Denied — SaaS Seeder</title>
     <!-- CSS files -->
     <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet"/>
     <link href="./assets/tabler/css/tabler-vendors.min.css" rel="stylesheet"/>
@@ -253,6 +254,17 @@ if (hasSession('user_type')) {
             50% {
                 transform: translateY(-50px) rotate(180deg);
             }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .access-denied-card,
+            .error-title,
+            .error-subtitle,
+            .error-details,
+            .btn-back,
+            .help-text { animation: none !important; }
+            .access-denied-icon { animation: none !important; }
+            .shape { animation: none !important; }
         }
     </style>
 </head>

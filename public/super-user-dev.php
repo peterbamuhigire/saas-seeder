@@ -237,43 +237,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <p class="subtitle">Fill in the details below to create the first super admin account.</p>
 
       <?php if (!empty($error)): ?>
-        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" style="border-radius:8px;">
+        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" style="border-radius:8px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <?php echo htmlspecialchars($error); ?>
         </div>
       <?php endif; ?>
 
-      <form action="./super-user-dev.php" method="POST" autocomplete="off" id="createForm">
+      <form action="./super-user-dev.php" method="POST" id="createForm">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
 
         <div class="row g-3 mb-3">
           <div class="col-6">
-            <label class="form-label fw-medium">First Name <span class="text-danger">*</span></label>
-            <input type="text" name="first_name" class="form-control" placeholder="John" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
+            <label for="first_name" class="form-label fw-medium">First Name</label>
+            <input type="text" name="first_name" id="first_name" class="form-control" autocomplete="given-name" required value="<?php echo htmlspecialchars($_POST['first_name'] ?? ''); ?>">
           </div>
           <div class="col-6">
-            <label class="form-label fw-medium">Last Name <span class="text-danger">*</span></label>
-            <input type="text" name="last_name" class="form-control" placeholder="Doe" required value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>">
+            <label for="last_name" class="form-label fw-medium">Last Name</label>
+            <input type="text" name="last_name" id="last_name" class="form-control" autocomplete="family-name" required value="<?php echo htmlspecialchars($_POST['last_name'] ?? ''); ?>">
           </div>
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-medium">Username <span class="text-danger">*</span></label>
-          <input type="text" name="username" class="form-control" placeholder="admin" autocomplete="off" required value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+          <label for="username" class="form-label fw-medium">Username</label>
+          <input type="text" name="username" id="username" class="form-control" autocomplete="username" required value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
           <small class="text-muted">Used to sign in</small>
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-medium">Email Address <span class="text-danger">*</span></label>
-          <input type="email" name="email" class="form-control" placeholder="admin@example.com" autocomplete="off" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+          <label for="email" class="form-label fw-medium">Email Address</label>
+          <input type="email" name="email" id="email" class="form-control" autocomplete="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-medium">Password <span class="text-danger">*</span></label>
+          <label for="password" class="form-label fw-medium">Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="password" id="password" class="form-control" placeholder="Min. 8 characters" autocomplete="off" required>
+            <input type="password" name="password" id="password" class="form-control" autocomplete="new-password" required>
             <span class="input-group-text p-0 border-0 bg-transparent">
-              <button type="button" class="btn btn-link text-muted px-3" id="togglePassword">
+              <button type="button" class="btn btn-link text-muted px-3" id="togglePassword" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
               </button>
             </span>
@@ -286,11 +286,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <div class="mb-4">
-          <label class="form-label fw-medium">Confirm Password <span class="text-danger">*</span></label>
+          <label for="confirm_password" class="form-label fw-medium">Confirm Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Repeat password" autocomplete="off" required>
+            <input type="password" name="confirm_password" id="confirm_password" class="form-control" autocomplete="new-password" required>
             <span class="input-group-text p-0 border-0 bg-transparent">
-              <button type="button" class="btn btn-link text-muted px-3" id="toggleConfirm">
+              <button type="button" class="btn btn-link text-muted px-3" id="toggleConfirm" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
               </button>
             </span>

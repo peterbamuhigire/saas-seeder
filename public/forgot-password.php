@@ -78,10 +78,10 @@ $loginBackground = UiHelper::getRandomLoginBackground();
         <div>Email-based password reset is not yet configured for this installation. Please contact your system administrator to reset your password.</div>
       </div>
 
-      <form id="forgotPasswordForm" autocomplete="off">
+      <form id="forgotPasswordForm">
         <div class="mb-4">
-          <label class="form-label fw-medium">Email or Username</label>
-          <input type="text" class="form-control" id="identifier" placeholder="Enter your email or username">
+          <label for="identifier" class="form-label fw-medium">Email or Username</label>
+          <input type="text" class="form-control" id="identifier" name="identifier" autocomplete="username">
         </div>
         <button type="submit" class="btn btn-primary w-100 btn-submit">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>

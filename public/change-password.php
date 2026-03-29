@@ -24,14 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $currentPassword = $_POST['current_password'] ?? '';
         $newPassword      = $_POST['new_password'] ?? '';
-        $confirmPassword  = $_POST['confirm_password'] ?? '';
 
-        if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
+        if (empty($currentPassword) || empty($newPassword)) {
             throw new \Exception('All fields are required.');
-        }
-
-        if ($newPassword !== $confirmPassword) {
-            throw new \Exception('New passwords do not match.');
         }
 
         $passwordHelper = new PasswordHelper();
@@ -162,27 +157,27 @@ $pageTitle = 'Change Password';
         </div>
       <?php endif; ?>
 
-      <form method="POST" action="./change-password.php" autocomplete="off">
+      <form method="POST" action="./change-password.php">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
 
         <div class="mb-3">
-          <label class="form-label fw-medium">Current Password</label>
+          <label for="current_password" class="form-label fw-medium">Current Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="current_password" id="current_password" class="form-control" required>
+            <input type="password" name="current_password" id="current_password" class="form-control" autocomplete="current-password" required>
             <span class="input-group-text">
-              <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="current_password">
+              <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="current_password" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
               </button>
             </span>
           </div>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label fw-medium">New Password</label>
+        <div class="mb-4">
+          <label for="new_password" class="form-label fw-medium">New Password</label>
           <div class="input-group input-group-flat">
-            <input type="password" name="new_password" id="new_password" class="form-control" required>
+            <input type="password" name="new_password" id="new_password" class="form-control" autocomplete="new-password" required>
             <span class="input-group-text">
-              <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="new_password">
+              <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="new_password" aria-label="Toggle password visibility">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
               </button>
             </span>
@@ -192,18 +187,6 @@ $pageTitle = 'Change Password';
               <div id="pw-strength-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
             </div>
             <small id="pw-strength-text" class="text-muted"></small>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label class="form-label fw-medium">Confirm New Password</label>
-          <div class="input-group input-group-flat">
-            <input type="password" name="confirm_password" id="confirm_password" class="form-control" required>
-            <span class="input-group-text">
-              <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="confirm_password">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
-              </button>
-            </span>
           </div>
         </div>
 
@@ -263,10 +246,6 @@ $pageTitle = 'Change Password';
     strengthText.textContent = lvl.label;
   });
 
-  // Confirm password match
-  document.getElementById('confirm_password').addEventListener('input', function() {
-    this.setCustomValidity(this.value && this.value !== newPw.value ? 'Passwords do not match' : '');
-  });
 </script>
 </body>
 </html>
