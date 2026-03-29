@@ -4,22 +4,40 @@ declare(strict_types=1);
 namespace App\Helpers;
 
 /**
- * UiHelper - UI-related utility functions
+ * UiHelper — UI-related utility functions.
  */
 final class UiHelper
 {
     /**
-     * Get a random login background image from the login-bg directory
-     *
-     * @param int $totalImages Total number of background images available (default: 15)
-     * @return string Path to the random background image
+     * Directory inside public/ where login background images are stored.
+     * Drop any .jpg, .jpeg, .png, or .webp files here — the sign-in page
+     * picks one at random on each load.
      */
-    public static function getRandomLoginBackground(int $totalImages = 15): string
-    {
-        // Generate random number between 1 and $totalImages
-        $randomNumber = rand(1, $totalImages);
+    private const BG_DIR = '/assets/images/login-backgrounds';
 
-        // Return the path to the random background image
-        return "./uploads/login-bg/bground{$randomNumber}.jpg";
+    /**
+     * Get a random login background image path.
+     *
+     * Scans the login-backgrounds directory for image files and returns
+     * a web-accessible path to a random one. Returns empty string if
+     * the directory is empty (caller should handle gracefully).
+     */
+    public static function getRandomLoginBackground(): string
+    {
+        $absoluteDir = $_SERVER['DOCUMENT_ROOT'] . self::BG_DIR;
+
+        if (!is_dir($absoluteDir)) {
+            return '';
+        }
+
+        $files = glob($absoluteDir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+
+        if (empty($files)) {
+            return '';
+        }
+
+        $chosen = $files[random_int(0, count($files) - 1)];
+
+        return self::BG_DIR . '/' . basename($chosen);
     }
 }

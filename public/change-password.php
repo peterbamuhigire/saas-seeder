@@ -84,9 +84,13 @@ $pageTitle = 'Change Password';
     .auth-split { min-height: 100vh; display: flex; }
     .auth-left {
       flex: 0 0 45%;
+      <?php if ($loginBackground !== ''): ?>
       background-image: url('<?php echo htmlspecialchars($loginBackground); ?>');
       background-size: cover;
       background-position: center;
+      <?php else: ?>
+      background: linear-gradient(160deg, #1a1f36 0%, #0d1117 100%);
+      <?php endif; ?>
       position: relative;
       display: flex;
       flex-direction: column;
@@ -119,7 +123,7 @@ $pageTitle = 'Change Password';
 <div class="auth-split">
   <!-- Left panel -->
   <div class="auth-left d-none d-lg-flex flex-column">
-    <a href="." class="auth-left-logo">SaaS Seeder</a>
+    <a href="." class="auth-left-logo"><img src="/assets/images/branding/logo-light.png" alt="Logo" style="max-height:75px;width:auto"></a>
     <div class="auth-left-tagline">
       <h3>Secure Your Account</h3>
       <p>Choose a strong password with uppercase, lowercase, numbers, and special characters.</p>

@@ -28,8 +28,13 @@ $loginBackground = UiHelper::getRandomLoginBackground();
     .auth-split { display: flex; min-height: 100vh; }
     .auth-left {
       flex: 0 0 55%;
+      <?php if ($loginBackground !== ''): ?>
       background-image: url('<?php echo htmlspecialchars($loginBackground); ?>');
-      background-size: cover; background-position: center; position: relative;
+      background-size: cover; background-position: center;
+      <?php else: ?>
+      background: linear-gradient(160deg, #1a1f36 0%, #0d1117 100%);
+      <?php endif; ?>
+      position: relative;
       display: flex; flex-direction: column; justify-content: space-between; padding: 3rem;
     }
     .auth-left::after {
@@ -53,7 +58,7 @@ $loginBackground = UiHelper::getRandomLoginBackground();
 <div class="auth-split">
   <!-- Left panel -->
   <div class="auth-left d-none d-lg-flex flex-column">
-    <a href="." class="auth-left-logo">SaaS Seeder</a>
+    <a href="." class="auth-left-logo"><img src="/assets/images/branding/logo-light.png" alt="Logo" style="max-height:75px;width:auto"></a>
     <div style="color:rgba(255,255,255,.85);">
       <h2 style="font-size:2rem;font-weight:700;margin-bottom:.75rem;">Forgot your<br>password?</h2>
       <p style="opacity:.8;max-width:360px;">Enter your email or username and we'll send you reset instructions.</p>

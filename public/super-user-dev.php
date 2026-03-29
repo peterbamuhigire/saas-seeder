@@ -197,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <!-- Left panel -->
   <div class="auth-left d-none d-lg-flex flex-column">
     <div>
-      <a href="." class="auth-left-logo">SaaS<span>Seeder</span></a>
+      <a href="." class="auth-left-logo"><img src="/assets/images/branding/logo-light.png" alt="Logo" style="max-height:75px;width:auto"></a>
     </div>
     <div class="auth-left-tagline">
       <div class="dev-badge">Dev Tool</div>

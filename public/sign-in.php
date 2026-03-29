@@ -151,9 +151,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     /* ── Left panel ── */
     .auth-left {
       flex: 0 0 55%;
+      <?php if ($loginBackground !== ''): ?>
       background-image: url('<?php echo htmlspecialchars($loginBackground); ?>');
       background-size: cover;
       background-position: center;
+      <?php else: ?>
+      background: linear-gradient(160deg, #1a1f36 0%, #0d1117 100%);
+      <?php endif; ?>
       position: relative;
       display: flex;
       flex-direction: column;
@@ -322,7 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <!-- Left panel -->
   <div class="auth-left">
-    <a href="." class="auth-left-logo">SaaS Seeder</a>
+    <a href="." class="auth-left-logo"><img src="/assets/images/branding/logo-light.png" alt="Logo" style="max-height:75px;width:auto"></a>
     <div class="auth-left-tagline">
       <h2>Build your SaaS<br>faster than ever.</h2>
       <p>Multi-tenant architecture, role-based access control, and a clean three-tier panel system — ready out of the box.</p>
