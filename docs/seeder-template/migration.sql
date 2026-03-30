@@ -502,17 +502,146 @@ END$$
 DELIMITER ;
 
 -- ================================================================
+-- 12. SYSTEM SETTINGS (global key-value config)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_system_settings` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `setting_key` VARCHAR(100) NOT NULL,
+  `setting_value` TEXT NULL,
+  `setting_type` ENUM('string','integer','boolean','json') DEFAULT 'string',
+  `description` VARCHAR(255) NULL,
+  `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_setting_key` (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 13. FRANCHISE SETTINGS (per-tenant key-value config)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_franchise_settings` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `franchise_id` BIGINT UNSIGNED NOT NULL,
+  `setting_key` VARCHAR(100) NOT NULL,
+  `setting_value` TEXT NULL,
+  `setting_type` ENUM('string','integer','boolean','json') DEFAULT 'string',
+  `updated_by` BIGINT UNSIGNED DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_franchise_setting` (`franchise_id`, `setting_key`),
+  CONSTRAINT `fk_fs_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 14. NOTIFICATIONS (in-app notifications)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_notifications` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `franchise_id` BIGINT UNSIGNED DEFAULT NULL,
+  `user_id` BIGINT UNSIGNED NOT NULL COMMENT 'Recipient',
+  `title` VARCHAR(255) NOT NULL,
+  `message` TEXT NOT NULL,
+  `type` ENUM('info','success','warning','error') DEFAULT 'info',
+  `link` VARCHAR(500) NULL COMMENT 'URL to navigate to on click',
+  `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+  `read_at` DATETIME NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_notif_user` (`user_id`, `is_read`),
+  KEY `idx_notif_franchise` (`franchise_id`),
+  CONSTRAINT `fk_notif_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_notif_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 15. FILE UPLOADS (metadata for uploaded files)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_file_uploads` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `franchise_id` BIGINT UNSIGNED DEFAULT NULL,
+  `uploaded_by` BIGINT UNSIGNED NOT NULL,
+  `original_name` VARCHAR(255) NOT NULL,
+  `stored_name` VARCHAR(255) NOT NULL COMMENT 'UUID-based filename on disk',
+  `file_path` VARCHAR(500) NOT NULL COMMENT 'Relative path from public/',
+  `mime_type` VARCHAR(100) NOT NULL,
+  `file_size` INT UNSIGNED NOT NULL COMMENT 'Bytes',
+  `entity_type` VARCHAR(50) NULL COMMENT 'e.g. user_photo, document, receipt',
+  `entity_id` BIGINT UNSIGNED NULL COMMENT 'FK to the owning record',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_upload_entity` (`entity_type`, `entity_id`),
+  KEY `idx_upload_franchise` (`franchise_id`),
+  CONSTRAINT `fk_upload_user` FOREIGN KEY (`uploaded_by`) REFERENCES `tbl_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_upload_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 16. API SIGNUP REQUESTS (franchise onboarding queue)
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_api_signup_requests` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `email` VARCHAR(255) NOT NULL,
+  `phone` VARCHAR(50) NULL,
+  `franchise_name` VARCHAR(255) NOT NULL,
+  `plan_code` VARCHAR(100) NOT NULL DEFAULT 'trial',
+  `language` VARCHAR(10) DEFAULT 'en',
+  `country` VARCHAR(80) NULL,
+  `currency` VARCHAR(10) NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `verify_token` VARCHAR(64) NOT NULL,
+  `verify_token_expires_at` DATETIME NOT NULL,
+  `is_verified` TINYINT(1) NOT NULL DEFAULT 0,
+  `verified_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_signup_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
 -- SEED DATA
 -- ================================================================
 INSERT INTO tbl_permissions (name, code, module, description) VALUES
+-- Dashboard
 ('View Dashboard', 'VIEW_DASHBOARD', 'DASHBOARD', 'Access main dashboard'),
-('Manage Users', 'MANAGE_USERS', 'ADMIN', 'Create/edit users'),
-('Manage Roles', 'MANAGE_ROLES', 'ADMIN', 'Manage roles and permissions'),
+-- User Management
+('View Users', 'VIEW_USERS', 'USERS', 'View user list'),
+('Create Users', 'CREATE_USER', 'USERS', 'Create new users'),
+('Edit Users', 'EDIT_USER', 'USERS', 'Edit existing users'),
+('Delete Users', 'DELETE_USER', 'USERS', 'Deactivate/delete users'),
+('Manage Users', 'MANAGE_USERS', 'USERS', 'Full user management access'),
+-- Role & Permission Management
+('View Roles', 'VIEW_ROLES', 'ROLES', 'View roles list'),
+('Manage Roles', 'MANAGE_ROLES', 'ROLES', 'Create/edit/delete roles and assign permissions'),
+-- System Administration
 ('View Audit Logs', 'VIEW_AUDIT_LOGS', 'ADMIN', 'Access audit logs'),
-('Manage Settings', 'MANAGE_SETTINGS', 'ADMIN', 'System configuration');
+('Manage Settings', 'MANAGE_SETTINGS', 'ADMIN', 'System and franchise configuration'),
+('Manage Franchises', 'MANAGE_FRANCHISES', 'ADMIN', 'Create/edit/suspend franchises'),
+-- Notifications
+('View Notifications', 'VIEW_NOTIFICATIONS', 'NOTIFICATIONS', 'View own notifications'),
+('Send Notifications', 'SEND_NOTIFICATIONS', 'NOTIFICATIONS', 'Send notifications to users'),
+-- File Management
+('Upload Files', 'UPLOAD_FILES', 'FILES', 'Upload files and documents'),
+('Delete Files', 'DELETE_FILES', 'FILES', 'Delete uploaded files');
 
 INSERT INTO tbl_global_roles (code, name, description, is_system)
 VALUES ('SUPER_ADMIN', 'Super Admin', 'Full system access', 1);
+
+-- Default system settings
+INSERT INTO tbl_system_settings (setting_key, setting_value, setting_type, description) VALUES
+('app_name', 'SaaS Seeder', 'string', 'Application display name'),
+('app_timezone', 'Africa/Kampala', 'string', 'Default timezone for new franchises'),
+('app_currency', 'UGX', 'string', 'Default currency for new franchises'),
+('app_language', 'en', 'string', 'Default language for new franchises'),
+('app_country', 'UG', 'string', 'Default country code (ISO 3166-1 alpha-2)'),
+('max_login_attempts', '5', 'integer', 'Failed login attempts before lockout'),
+('lockout_duration_minutes', '15', 'integer', 'Account lockout duration in minutes'),
+('session_timeout_seconds', '1800', 'integer', 'Session inactivity timeout'),
+('allow_self_registration', '0', 'boolean', 'Allow public franchise signup'),
+('require_email_verification', '1', 'boolean', 'Require email verification on signup'),
+('max_upload_size_mb', '10', 'integer', 'Maximum file upload size in MB'),
+('allowed_upload_types', '["jpg","jpeg","png","webp","pdf","doc","docx","xls","xlsx"]', 'json', 'Allowed file upload extensions');
 
 -- NOTE: No default user is seeded. Use super-user-dev.php to create the
 -- initial super_admin account with a properly hashed (Argon2ID) password.

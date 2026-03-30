@@ -120,132 +120,140 @@ database/schema/
 - Include proper foreign keys and indexes
 - Index `franchise_id` on all franchise-scoped tables
 
-### AI Agent Setup Process
+### AI Agent Scaffolding Process
 
-When starting a new project, Claude should:
+When starting a new project, Claude should follow this exact sequence. After scaffolding, this is no longer a template — it is a real SaaS project under development.
 
-#### Step 1: Read Requirements
+#### Step 1: Read SDLC Documents
 
-```bash
-# Load and understand all requirement files
-- Read docs/project-requirements/*.md
-- Identify custom user types needed
-- Understand domain-specific workflows
-- Note custom features beyond template
+```
+Read and understand all project documentation:
+- docs/project-requirements/requirements.md  → Features, acceptance criteria
+- docs/project-requirements/business-rules.md → Validation, calculations, state machines
+- docs/project-requirements/user-types.md     → Roles, permissions, access levels
+- docs/project-requirements/workflows.md      → User journeys, process flows
+- database/schema/core-schema.sql             → Project-specific tables (if provided)
 ```
 
-#### Step 2: Review Database Schema
+From these documents, identify:
+- Custom user types needed (beyond super_admin/owner/staff)
+- Project-specific database tables and relationships
+- Permissions required for each module
+- Business rules that affect schema design
 
-```bash
-# Validate schema follows multi-tenant patterns
-- Check database/schema/core-schema.sql
-- Validate franchise_id on all tenant-scoped tables
-- Verify collation is utf8mb4_unicode_ci
-- Ensure indexes include franchise_id
+#### Step 2: Create Database & Run Platform Migration
+
+```powershell
+# Option A: Use the scaffolding script (interactive)
+.\scripts\setup\scaffold-project.ps1
+
+# Option B: Manual steps
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS project_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root project_db < docs/seeder-template/migration.sql
 ```
 
-#### Step 3: Customize Template
+This creates 16 platform tables:
 
-**Update Session Prefix:**
-```php
-// src/config/session.php
-define('SESSION_PREFIX', 'school_');      // School SaaS
-define('SESSION_PREFIX', 'restaurant_');  // Restaurant SaaS
-define('SESSION_PREFIX', 'clinic_');      // Medical SaaS
-```
+| Table | Purpose |
+|-------|---------|
+| `tbl_franchises` | Tenant/organization records |
+| `tbl_users` | User accounts (Argon2ID hashing) |
+| `tbl_permissions` | Permission definitions |
+| `tbl_global_roles` | Role definitions |
+| `tbl_global_role_permissions` | Role-permission mapping |
+| `tbl_franchise_role_overrides` | Per-tenant role overrides |
+| `tbl_user_roles` | User-role assignments |
+| `tbl_user_permissions` | User-level permission overrides |
+| `tbl_user_sessions` | JWT session tracking |
+| `tbl_login_attempts` | Brute-force protection |
+| `tbl_audit_log` | Immutable audit trail |
+| `tbl_system_settings` | Global system config (key-value) |
+| `tbl_franchise_settings` | Per-tenant config (key-value) |
+| `tbl_notifications` | In-app notifications |
+| `tbl_file_uploads` | Uploaded file metadata |
+| `tbl_api_signup_requests` | Franchise onboarding queue |
 
-**Customize User Types (if needed):**
+#### Step 3: Create Project-Specific Schema
+
+Based on the SRS/requirements documents, create `database/schema/core-schema.sql` with project-specific tables. **Every tenant-scoped table MUST:**
+
 ```sql
--- Based on user-types.md requirements
+-- Follow this pattern:
+CREATE TABLE IF NOT EXISTS `tbl_example` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `franchise_id` BIGINT UNSIGNED NOT NULL,    -- REQUIRED for tenant isolation
+  -- ... project columns ...
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `created_by` BIGINT UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_franchise` (`franchise_id`),        -- REQUIRED index
+  CONSTRAINT `fk_example_franchise` FOREIGN KEY (`franchise_id`)
+    REFERENCES `tbl_franchises` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+```
+
+Then apply: `mysql -u root project_db < database/schema/core-schema.sql`
+
+#### Step 4: Customize User Types & Permissions
+
+```sql
+-- Based on user-types.md, extend the user_type enum:
 ALTER TABLE tbl_users MODIFY user_type ENUM(
-  'super_admin',
-  'owner',
-  'staff',
-  'student',    -- For school SaaS
-  'customer',   -- For restaurant SaaS
-  'patient'     -- For medical SaaS
+  'super_admin', 'owner', 'staff',
+  'teacher', 'student'           -- School SaaS example
 ) NOT NULL DEFAULT 'staff';
+
+-- Insert project-specific permissions:
+INSERT INTO tbl_permissions (name, code, module, description) VALUES
+('View Students', 'VIEW_STUDENTS', 'STUDENTS', 'View student list'),
+('Enroll Student', 'ENROLL_STUDENT', 'STUDENTS', 'Enroll new students');
+-- ... etc
 ```
 
-**Update Branding:**
-- Replace "SaaS Seeder" with project name throughout
-- Update `public/index.php` landing page
-- Update `public/sign-in.php` branding
-- Update `public/includes/topbar.php` navbar brand
+#### Step 5: Configure & Brand
 
-#### Step 4: Apply Project Schema
+1. **Session prefix:** Update `SESSION_PREFIX` in `src/config/session.php`
+2. **App name:** Update `$appName` in `public/includes/topbar.php`
+3. **Logo:** Place `logo-light.png` in `public/assets/images/branding/`
+4. **Login backgrounds:** Drop images in `public/assets/images/login-backgrounds/`
+5. **System settings:** `UPDATE tbl_system_settings SET setting_value = 'My App' WHERE setting_key = 'app_name';`
+6. **`.env`:** Configure database, secrets, CORS origins, APP_URL
 
-```bash
-# After template migration, apply project schema
-mysql -u root -p [db_name] < database/schema/core-schema.sql
+#### Step 6: Create Super Admin & First Franchise
 
-# If seed data exists
-mysql -u root -p [db_name] < database/schema/seed-data.sql
-```
+1. Visit `super-user-dev.php` to create the super admin account
+2. **DELETE `super-user-dev.php`** immediately after
+3. Create the first franchise via admin panel or SQL
 
-#### Step 5: Update Documentation
+#### Step 7: Update CLAUDE.md → Project CLAUDE.md
 
-**Create Project-Specific CLAUDE.md:**
+**This CLAUDE.md becomes the project's CLAUDE.md.** Update it with:
+- Project name and description
+- Custom user types and their permissions
+- Key business rules from requirements
+- Project-specific database tables
+- Development priorities (feature roadmap)
+- Session prefix value
 
-```markdown
-# [Project Name] - Claude Development Guide
+Remove or archive the "Starting a New Project from Template" section — it's no longer needed.
 
-## Project Overview
-[Brief description from requirements]
+#### Scaffolding Checklist
 
-## Custom User Types
-[From user-types.md]
-
-## Key Business Rules
-[From business-rules.md]
-
-## Critical Workflows
-[From workflows.md]
-
-## Database Schema
-**Custom Tables:** [List tables from schema]
-**Reference:** database/schema/core-schema.sql
-
-## Session Prefix
-**Prefix:** `[project_prefix]_`
-
-## Development Priorities
-1. [Feature 1]
-2. [Feature 2]
-3. [Feature 3]
-
-## References
-- Requirements: docs/project-requirements/
-- Schema: database/schema/
-```
-
-**Update README.md:**
-- Change title to project name
-- Update description to match project purpose
-- Document project-specific setup steps
-- List custom user types
-
-**Clean Up Template Docs:**
-```bash
-# Remove template-specific docs (optional)
-rm -rf docs/seeder-template/
-
-# Keep project requirements for reference
-# Keep docs/PANEL-STRUCTURE.md (architecture guide)
-```
-
-#### Step 6: Validation Checklist
-
-Before starting development, verify:
-
-- [ ] All requirements documented in docs/project-requirements/
-- [ ] Database schema follows multi-tenant patterns
-- [ ] Session prefix customized in src/config/session.php
-- [ ] User types match requirements
-- [ ] Branding updated throughout application
-- [ ] Project-specific CLAUDE.md created
+- [ ] SDLC documents read and understood
+- [ ] Database created with `utf8mb4_unicode_ci`
+- [ ] Platform migration applied (16 tables + SPs)
+- [ ] Project-specific schema applied
+- [ ] User types customised for the domain
+- [ ] Project-specific permissions seeded
+- [ ] Session prefix changed from `saas_app_`
+- [ ] Branding updated (topbar, logo, backgrounds)
+- [ ] `.env` configured with fresh secrets
+- [ ] Super admin created via `super-user-dev.php`
+- [ ] `super-user-dev.php` deleted
+- [ ] First franchise created
+- [ ] CLAUDE.md updated with project-specific content
 - [ ] README.md updated with project details
-- [ ] .env configured with project-specific values
 
 ### Example Project Structures
 
