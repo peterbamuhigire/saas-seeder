@@ -8,7 +8,7 @@
 
 ## Findings Addressed
 
-| ID | Type | Issue |
+| ID | Type | Issue | 
 |----|------|-------|
 | UX-F1 | FAIL | Skip-to-content link missing on all 10 pages |
 | UX-F2 | FAIL | `aria-required="true"` missing on form inputs |
