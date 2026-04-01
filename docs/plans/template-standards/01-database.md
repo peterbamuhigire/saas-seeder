@@ -31,7 +31,7 @@
 **TASK:** Complete rewrite of the base migration to include all required tables, correct collation, ROW_FORMAT, foreign keys, and remove the incompatible seed user.
 
 **CONSTRAINTS:**
-- Every CREATE TABLE must include `COLLATE utf8mb4_unicode_ci` and `ROW_FORMAT=DYNAMIC`
+- Every CREATE TABLE must include `COLLATE utf8mb4_unicode_ci` and `ROW_FORMAT=DYNAMIC` 
 - Every `franchise_id` column must be `BIGINT UNSIGNED`
 - All FK relationships must be explicit with `ON DELETE` / `ON UPDATE` actions
 - `tbl_franchises` must be created BEFORE `tbl_users` (dependency order)
