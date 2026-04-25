@@ -1,0 +1,10 @@
+{
+  "success": false,
+  "error": {
+    "code": "AUTH_UNAUTHORIZED",
+    "message": "Invalid credentials",
+    "details": {},
+    "documentation_url": "/docs/api/errors#AUTH_UNAUTHORIZED"
+  },
+  "request_id": "8f3a4d7c1b6e4a2f9d0c3b5a7e8f9012"
+}

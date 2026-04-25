@@ -1,0 +1,52 @@
+# Critical Flows
+
+Phase: April World-Class Phase 02  
+Status: Accepted architecture baseline
+
+## Route Coverage
+
+| Route or endpoint | Critical flow |
+|---|---|
+| `/`, `/index.php` | Web shell route selection |
+| `/sign-in.php` | Web login |
+| `/sign-up.php` | Public signup page |
+| `/forgot-password.php` | Password recovery request |
+| `/change-password.php` | Password change |
+| `/logout.php` | Web logout |
+| `/dashboard.php` | Franchise dashboard |
+| `/adminpanel/index.php` | Super-admin dashboard |
+| `/memberpanel/index.php` | Member portal |
+| `/access-denied.php` | Access denial view |
+| `/skeleton.php` | Guarded page template |
+| `/session-test.php` | Development diagnostics |
+| `/super-user-dev.php` | Development super-user utility |
+| `/api/v1/auth/login.php` | API login |
+| `/api/v1/auth/refresh.php` | API refresh rotation |
+| `/api/v1/auth/logout.php` | API device logout |
+| `/api/v1/auth/logout-all.php` | API account logout |
+| `/api/v1/public/auth/register.php` | Public franchise signup request |
+| `/assets/**`, `/uploads/**`, `/favicon*`, `/robots.txt`, `/sitemap.xml` | Static asset and metadata delivery |
+
+## Flow Matrix
+
+| Flow | Entry point | Auth mode | Tenant source | Permission/module checks | Transaction boundary | Audit events | Error model | Observability fields | Retry/idempotency |
+|---|---|---|---|---|---|---|---|---|---|
+| Web shell route selection | `/`, `/index.php` | Optional web session. | Existing session `franchise_id`; unauthenticated users have no tenant. | Authenticated users are routed by `user_type`; no module mutation. | None. | None for read-only routing. | Redirect to sign-in or role-specific panel. | `request_id`, route, user id when present, user type. | Safe to retry; no side effects. |
+| Web login | `/sign-in.php` POST | Guest form with CSRF. | Look up `tbl_users.franchise_id` by username/email; super admin may have null and must get explicit platform context. | Credential validation through `AuthService`; no module check. | Authenticate, create DB session, set PHP session, and reset failed attempts as one logical unit. | `login_success`, `login_failure`, `session_created`. | Render form errors; no raw exception output. | `request_id`, user id when known, franchise id, IP, user agent, auth result. | User may retry. Failed attempts are counted and not idempotent. |
+| Public signup page | `/sign-up.php` | Guest web page. | Request body when submitted; pending tenant is `franchise_name` until verification provisions a franchise. | No permission check; signup module must be globally enabled. | Form render has none; submission uses API or future signup service. | `signup_page_view` optional, `signup_request_created` on submit. | Form validation errors. | `request_id`, email hash, country, plan. | Duplicate pending email returns conflict. |
+| Password recovery request | `/forgot-password.php` | Guest form with CSRF. | User lookup by email determines tenant; response does not reveal account existence. | No module check. | Create password reset token and notification request in one transaction. | `password_reset_requested`. | Generic success response for known and unknown emails. | `request_id`, email hash, IP, user agent. | Repeated requests rotate token and rate limits apply. |
+| Password change | `/change-password.php` | Web session with CSRF. | Session `franchise_id`; super admin platform context when null. | Authenticated actor; may require current password unless forced change. | Update password hash, clear forced flag, revoke sessions according to policy. | `password_changed`, `sessions_revoked_after_password_change`. | Form validation errors or redirect to sign-in on expired session. | `request_id`, user id, franchise id, IP. | Form resubmission is not idempotent after success; redirect prevents duplicate mutation. |
+| Web logout | `/logout.php` | Web session. | Session `franchise_id` before clear. | Authenticated session when present. | Invalidate DB session token when available, clear prefixed session, destroy PHP session. | `logout_success`. | Redirect to sign-in with status. | `request_id`, user id, franchise id, session jti when present. | Safe to retry; already logged out redirects to sign-in. |
+| Franchise dashboard | `/dashboard.php` | Web session. | Session `franchise_id`; super admin must select or intentionally view a franchise context. | `user_type` is `super_admin`, `owner`, or `staff`; module checks apply to dashboard widgets as modules mature. | Read-only page render. | Optional `dashboard_viewed`. | Redirect to member panel or sign-in. | `request_id`, user id, franchise id, panel, user type. | Safe to retry. |
+| Super-admin dashboard | `/adminpanel/index.php` | Web session. | Platform scope by default; selected franchise only for tenant operations. | `user_type=super_admin` or permitted owner support role by explicit policy. | Read-only page render unless future actions are added. | Optional `admin_panel_viewed`. | Redirect to sign-in or member/franchise panel. | `request_id`, user id, selected franchise id, panel. | Safe to retry. |
+| Member portal | `/memberpanel/index.php` | Web session. | Session `franchise_id`. | Authenticated user with member/staff/owner/super-admin access; member module gates apply to member features. | Read-only page render. | Optional `member_panel_viewed`. | Redirect to sign-in on no session. | `request_id`, user id, franchise id, panel. | Safe to retry. |
+| Access denial view | `/access-denied.php` | Optional web session. | Session `franchise_id` when present. | None; displays a sanitized denial reason. | None. | `access_denied_viewed` with reason and route when known. | HTML view with encoded reason. | `request_id`, user id when present, reason, denied permission/module. | Safe to retry. |
+| Guarded page template | `/skeleton.php` | Web session. | Session `franchise_id`. | Page declares required module and permission before rendering. | Depends on cloned page use case. | Page-specific events. | Redirect or JSON 403 based on request accept headers. | `request_id`, user id, franchise id, module, permission. | Template itself is read-only. |
+| Development diagnostics | `/session-test.php` | Local development only. | Session `franchise_id` when present. | Disabled outside `APP_ENV=development`; otherwise developer access only. | None. | `dev_diagnostic_viewed` in development logs. | 404 or 403 outside local development. | `request_id`, environment, user id when present. | Safe to retry. |
+| Development super-user utility | `/super-user-dev.php` | Local development only with CSRF for mutation. | Platform scope; created user may have null franchise id. | Disabled outside `APP_ENV=development`; setup operator only. | User creation or update transaction. | `dev_super_user_created` or `dev_super_user_updated`. | HTML form errors; no secret output. | `request_id`, environment, user id affected, IP. | Repeated submit updates the same dev account by stable username/email. |
+| API login | `/api/v1/auth/login.php` POST | Guest JSON request. | `tbl_users.franchise_id` resolved during credential lookup. | Credential validation through `AuthService`; no module check. | Authenticate, create access session, create refresh-token family, and reset failures as one logical unit after Phase 04. | `api_login_success`, `api_login_failure`, `refresh_family_created`. | ADR-0002 JSON envelope with 401, 403, 423, or 422. | `request_id`, actor id when known, franchise id, IP, user agent, auth result. | Failed attempts are counted. Client retries must respect rate limits. |
+| API refresh rotation | `/api/v1/auth/refresh.php` POST | Opaque refresh token in JSON body or bearer slot by compatibility window. | Refresh-token row stores `franchise_id`; new access token uses that row, not request body. | Token family, device, revocation, and user status checks; no module check. | Revoke old refresh token, insert new hashed refresh token, issue access token in one DB transaction. | `api_refresh_rotated`, `api_refresh_reuse_detected`, `api_refresh_denied`. | ADR-0002 JSON envelope with 200, 400, 401, or 409 for reuse detection. | `request_id`, user id, franchise id, token family id, device id, old/new jti hashes. | Single-use. Retrying the same refresh token after success is treated as reuse and revokes the family. |
+| API device logout | `/api/v1/auth/logout.php` POST | Opaque refresh token. | Refresh-token row stores `franchise_id`. | Valid refresh token or already-revoked token lookup. | Revoke the presented token and optionally current access session. | `api_logout_device`. | ADR-0002 JSON envelope; repeated logout returns success without revealing token state. | `request_id`, user id when resolved, franchise id, device id. | Idempotent for the same token. |
+| API account logout | `/api/v1/auth/logout-all.php` POST | Bearer access token. | Access-token `franchise_id` verified against DB session and user. | Authenticated actor may revoke own tokens; admin revocation requires explicit permission when added. | Revoke all refresh tokens for user or one device in one transaction. | `api_logout_all` or `api_logout_device_by_access`. | ADR-0002 JSON envelope with 200, 401, 403. | `request_id`, user id, franchise id, device id when supplied. | Idempotent; repeated calls keep all targeted tokens revoked. |
+| Public franchise signup request | `/api/v1/public/auth/register.php` POST | Guest JSON request. | Request `franchise_name`, plan, country, currency; no tenant id exists yet. | Signup endpoint is public; rate limiting and duplicate email checks apply. | Insert pending signup request and verification token in one transaction. | `api_signup_request_created`, `api_signup_duplicate_blocked`. | ADR-0002 JSON envelope with 201, 400, 409, 422. | `request_id`, email hash, plan, country, language, currency. | Same pending email returns 409. Expired verified flow is handled by provisioning phase. |
+| Static asset and metadata delivery | `/assets/**`, `/uploads/**`, `/favicon*`, `/robots.txt`, `/sitemap.xml` | None for public assets; authenticated checks for private uploads when added. | None for public assets; upload metadata carries tenant for private files. | No RBAC for public assets; private uploads require module and permission checks. | None for public reads. | None for ordinary public assets; private download events when added. | HTTP 404/403 with no PHP stack output. | `request_id`, path, status, cache hit when available. | Safe to retry and cache according to asset class. |

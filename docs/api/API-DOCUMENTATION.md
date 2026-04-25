@@ -1,453 +1,120 @@
 # API Documentation - SaaS Seeder Template
 
-## Base URL
+## Contract
 
-```
+Base URL:
+
+```text
 http://localhost:8000/api/v1
 ```
 
-In production:
-```
-https://yourdomain.com/api/v1
+Canonical contract artifacts:
+
+- [OpenAPI spec](openapi.yml)
+- [Auth model](auth-model.md)
+- [Error model](error-model.md)
+- [Rate limit policy](rate-limit-policy.md)
+- [Idempotency map](idempotency-map.md)
+- [Observability notes](observability-notes.md)
+
+## Response Envelope
+
+Every response includes `request_id`. Clients may provide `X-Request-Id`; otherwise the API generates one.
+
+Success:
+
+```json
+{
+  "success": true,
+  "request_id": "8f3a4d7c1b6e4a2f9d0c3b5a7e8f9012",
+  "message": "Login successful",
+  "data": {}
+}
 ```
 
----
+Error:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "AUTH_UNAUTHORIZED",
+    "message": "Invalid credentials",
+    "details": {},
+    "documentation_url": "/docs/api/errors#AUTH_UNAUTHORIZED"
+  },
+  "request_id": "8f3a4d7c1b6e4a2f9d0c3b5a7e8f9012"
+}
+```
 
 ## Authentication
 
-> **Password hashing:** All API auth endpoints use `PasswordHelper::verifyPassword()` / `hashPassword()`
-> (Argon2ID + salt + pepper). Never use raw `password_verify()` or `password_hash()` in API code.
+Authenticated endpoints use bearer tokens:
 
-### 1. Login
-
-Authenticate user and receive JWT token.
-
-**Endpoint:** `POST /auth/login`
-
-**Request:**
-```json
-{
-  "username": "root",
-  "password": "password",
-  "remember_me": false
-}
+```http
+Authorization: Bearer <token>
 ```
 
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-    "expires_at": "2026-02-02T12:00:00Z",
-    "user": {
-      "id": 1,
-      "username": "root",
-      "email": "peter@techguypeter.com",
-      "user_type": "super_admin",
-      "franchise_id": null,
-      "full_name": "Peter Bamuhigire"
-    }
-  }
-}
-```
+Password hashing remains centralized through `PasswordHelper` and `UserService`. API endpoint code must not call raw password hashing or verification functions directly.
 
-**Error Response (401):**
-```json
-{
-  "success": false,
-  "message": "Invalid credentials",
-  "errors": {
-    "code": "INVALID_PASSWORD"
-  }
-}
-```
+## Auth Endpoints
 
-**Error Codes:**
-- `USER_NOT_FOUND` - Username/email not found
-- `INVALID_PASSWORD` - Password incorrect
-- `ACCOUNT_INACTIVE` - Account is not active
-- `ACCOUNT_LOCKED` - Too many failed attempts
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/auth/login` | Public | Authenticate username/email plus password. |
+| `POST` | `/auth/refresh` | Refresh token body or bearer header | Rotate refresh token and issue a new access token. |
+| `POST` | `/auth/logout` | Refresh token body or bearer header | Revoke the current device refresh token. |
+| `POST` | `/auth/logout-all` | Access bearer token | Revoke all refresh tokens for the user. |
+| `POST` | `/public/auth/register` | Public | Create a public signup request. |
 
----
+## Login Example
 
-### 2. Logout
-
-Invalidate current session and token.
-
-**Endpoint:** `POST /auth/logout`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
----
-
-### 3. Logout All Sessions
-
-Invalidate all active sessions for the user.
-
-**Endpoint:** `POST /auth/logout-all`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "All sessions logged out successfully"
-}
-```
-
----
-
-### 4. Refresh Token
-
-Get a new JWT token before current one expires.
-
-**Endpoint:** `POST /auth/refresh`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-**Success Response (200):**
-```json
-{
-  "success": true,
-  "message": "Token refreshed",
-  "data": {
-    "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-    "expires_at": "2026-02-02T13:00:00Z"
-  }
-}
-```
-
----
-
-## User Registration (Public)
-
-### Register New User
-
-Create a new user account (if self-registration is enabled).
-
-**Endpoint:** `POST /public/auth/register`
-
-**Request:**
-```json
-{
-  "username": "johndoe",
-  "email": "john@example.com",
-  "password": "SecurePassword123",
-  "password_confirmation": "SecurePassword123",
-  "first_name": "John",
-  "last_name": "Doe",
-  "phone": "+1234567890"
-}
-```
-
-**Success Response (201):**
-```json
-{
-  "success": true,
-  "message": "Registration successful. Please check your email to verify your account.",
-  "data": {
-    "user_id": 15,
-    "username": "johndoe",
-    "email": "john@example.com",
-    "status": "pending"
-  }
-}
-```
-
-**Error Response (400):**
-```json
-{
-  "success": false,
-  "message": "Validation failed",
-  "errors": {
-    "email": ["Email already exists"],
-    "password": ["Password must be at least 8 characters"]
-  }
-}
-```
-
----
-
-## Using the API
-
-### Authorization Header
-
-Include JWT token in all authenticated requests:
-
-```
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
-```
-
-### Content Type
-
-All requests should use JSON:
-
-```
-Content-Type: application/json
-```
-
-### Example cURL Request
+Request:
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{
-    "username": "root",
-    "password": "password"
-  }'
+  -H "X-Request-Id: demo-request-1" \
+  -d '{"username":"root","password":"password"}'
 ```
 
-### Example JavaScript (Fetch)
-
-```javascript
-const response = await fetch('http://localhost:8000/api/v1/auth/login', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    username: 'root',
-    password: 'password'
-  })
-});
-
-const data = await response.json();
-
-if (data.success) {
-  // Store token
-  localStorage.setItem('auth_token', data.data.token);
-  console.log('Login successful:', data.data.user);
-} else {
-  console.error('Login failed:', data.message);
-}
-```
-
-### Example Authenticated Request
-
-```javascript
-const token = localStorage.getItem('auth_token');
-
-const response = await fetch('http://localhost:8000/api/v1/protected-endpoint', {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  }
-});
-
-const data = await response.json();
-```
-
----
+Success response shape is available at [examples/auth-login-success.json](examples/auth-login-success.json).
 
 ## Error Handling
 
-### Standard Error Response Format
+Stable error codes are documented in [error-model.md](error-model.md). Common codes include:
 
-```json
-{
-  "success": false,
-  "message": "Human-readable error message",
-  "errors": {
-    "field_name": ["Error detail 1", "Error detail 2"]
-  }
-}
-```
+| Code | HTTP | Meaning |
+| --- | ---: | --- |
+| `REQUEST_MALFORMED_JSON` | 400 | Invalid JSON body. |
+| `AUTH_UNAUTHORIZED` | 401 | Authentication is missing or failed. |
+| `REQUEST_METHOD_NOT_ALLOWED` | 405 | Unsupported method; response includes `Allow`. |
+| `VALIDATION_FAILED` | 422 | Input failed validation. |
+| `INTERNAL_SERVER_ERROR` | 500 | Unexpected server error. |
 
-### HTTP Status Codes
+## Runtime Notes
 
-| Code | Meaning | When Used |
-|------|---------|-----------|
-| 200 | OK | Successful request |
-| 201 | Created | Resource created successfully |
-| 400 | Bad Request | Validation error or malformed request |
-| 401 | Unauthorized | Authentication required or failed |
-| 403 | Forbidden | User lacks permission |
-| 404 | Not Found | Resource doesn't exist |
-| 422 | Unprocessable Entity | Validation failed |
-| 500 | Internal Server Error | Server-side error |
+`api/bootstrap.php` now delegates request IDs, JSON responses, method guards, bearer token extraction, CORS, and security headers to classes under `src/Http`.
 
----
+Temporary compatibility helpers remain because current endpoints still call legacy globals:
 
-## Rate Limiting (To Be Implemented)
+- `jsonResponse()`
+- `errorResponse()`
+- `json_response()`
+- `require_method()`
+- `read_json_body()`
+- `bearer_token()`
+- `get_db()`
+- `require_auth()`
 
-Future implementation will include:
-- **Rate limit:** 100 requests per minute per IP
-- **Headers:**
-  - `X-RateLimit-Limit` - Max requests per window
-  - `X-RateLimit-Remaining` - Requests remaining
-  - `X-RateLimit-Reset` - Timestamp when limit resets
+Removal note: these helpers should be removed during the Phase 04 endpoint rewrite once endpoints call the runtime classes directly.
 
----
+## CORS
 
-## CORS Configuration
+Allowed origins come from `CORS_ALLOWED_ORIGINS`. Development falls back to `*`. CORS allows `Content-Type`, `Authorization`, `X-Request-Id`, and `Idempotency-Key`.
 
-The API includes CORS headers for cross-origin requests:
+## Version
 
-```php
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
-Access-Control-Allow-Headers: Content-Type, Authorization
-```
+Current API version: `v1`
 
-For production, update `api/bootstrap.php` to restrict origins:
-
-```php
-header('Access-Control-Allow-Origin: https://yourdomain.com');
-```
-
----
-
-## Testing the API
-
-### Using Postman
-
-1. **Create Collection:** "SaaS Seeder API"
-2. **Add Login Request:**
-   - Method: POST
-   - URL: `http://localhost:8000/api/v1/auth/login`
-   - Body (JSON):
-     ```json
-     {
-       "username": "root",
-       "password": "password"
-     }
-     ```
-3. **Save Token:** Extract `data.token` from response
-4. **Add to Collection Variable:** `auth_token`
-5. **Use in Other Requests:**
-   - Headers: `Authorization: Bearer {{auth_token}}`
-
-### Using Thunder Client (VS Code)
-
-1. Install Thunder Client extension
-2. Create new request
-3. Set URL and method
-4. Add body/headers as needed
-5. Save to collection for reuse
-
----
-
-## Building Your Own API Endpoints
-
-### Example: Get User Profile
-
-**File:** `api/v1/users/me.php`
-
-```php
-<?php
-require_once '../../bootstrap.php';
-
-use App\Auth\Middleware\AuthMiddleware;
-use App\Config\Database;
-
-// Authenticate request
-$authMiddleware = new AuthMiddleware((new Database())->getConnection());
-$user = $authMiddleware->authenticate();
-
-if (!$user) {
-    errorResponse('Unauthorized', 401);
-}
-
-// Get user data
-$db = (new Database())->getConnection();
-$stmt = $db->prepare("
-    SELECT id, username, email, first_name, last_name, user_type, franchise_id
-    FROM tbl_users
-    WHERE id = ?
-");
-$stmt->execute([$user['id']]);
-$userData = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$userData) {
-    errorResponse('User not found', 404);
-}
-
-// Return user data
-jsonResponse(true, $userData, 'User profile retrieved');
-```
-
-**Usage:**
-```bash
-curl -X GET http://localhost:8000/api/v1/users/me \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-## Permission Checking in API
-
-```php
-<?php
-require_once '../../bootstrap.php';
-
-use App\Auth\Middleware\{AuthMiddleware, PermissionMiddleware};
-use App\Config\Database;
-
-$db = (new Database())->getConnection();
-
-// Authenticate
-$authMiddleware = new AuthMiddleware($db);
-$user = $authMiddleware->authenticate();
-
-// Check permission
-$permissionMiddleware = new PermissionMiddleware($db);
-$permissionMiddleware->requirePermission($user['id'], $user['franchise_id'], 'INVOICE_CREATE');
-
-// If we get here, user has permission
-// ... proceed with endpoint logic
-```
-
----
-
-## WebSocket Support (Future)
-
-Planned support for real-time features:
-- Live notifications
-- Multi-user collaboration
-- Real-time data updates
-
----
-
-## API Versioning
-
-Current version: **v1**
-
-Future versions will be accessible via:
-- `api/v2/auth/login`
-- `api/v3/auth/login`
-
-Old versions will be deprecated with 6-month notice.
-
----
-
-## Additional Resources
-
-- **Postman Collection:** (To be created)
-- **OpenAPI/Swagger Spec:** (To be created)
-- **API Client Library:** (To be created)
-
----
-
-**Last Updated:** 2026-02-01
-**Version:** 1.0
+Last updated: 2026-04-26

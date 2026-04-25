@@ -195,16 +195,19 @@ CREATE TABLE IF NOT EXISTS `tbl_user_sessions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `franchise_id` BIGINT UNSIGNED DEFAULT NULL,
   `user_id` BIGINT UNSIGNED NOT NULL,
-  `token` VARCHAR(255) NOT NULL,
+  `token` VARCHAR(255) NULL,
+  `jti` CHAR(32) NULL,
+  `token_hash` CHAR(64) NULL,
   `remember_me` TINYINT(1) NOT NULL DEFAULT 0,
-  `ip_address` VARCHAR(45) NOT NULL,
-  `user_agent` VARCHAR(255) NOT NULL,
+  `ip_address` VARCHAR(45) NULL,
+  `user_agent` VARCHAR(255) NULL,
   `expires_at` TIMESTAMP NOT NULL,
   `invalidated_at` TIMESTAMP NULL DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `session_data` JSON DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_token` (`token`),
+  UNIQUE KEY `uk_session_jti` (`jti`),
+  KEY `idx_session_token_hash` (`token_hash`),
   KEY `idx_user_sessions` (`user_id`, `expires_at`),
   KEY `idx_expires` (`expires_at`),
   CONSTRAINT `fk_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -212,7 +215,35 @@ CREATE TABLE IF NOT EXISTS `tbl_user_sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 
 -- ================================================================
--- 10. LOGIN ATTEMPTS
+-- 10. REFRESH TOKENS
+-- ================================================================
+CREATE TABLE IF NOT EXISTS `tbl_refresh_tokens` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` BIGINT UNSIGNED NOT NULL,
+  `franchise_id` BIGINT UNSIGNED NULL,
+  `token_hash` CHAR(64) NOT NULL,
+  `family_id` CHAR(32) NOT NULL,
+  `device_id` VARCHAR(128) NULL,
+  `user_agent_hash` CHAR(64) NULL,
+  `ip_address` VARCHAR(45) NULL,
+  `expires_at` DATETIME NOT NULL,
+  `revoked_at` DATETIME NULL,
+  `replaced_by_token_id` BIGINT UNSIGNED NULL,
+  `reuse_detected_at` DATETIME NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_refresh_token_hash` (`token_hash`),
+  KEY `idx_refresh_user` (`user_id`, `expires_at`),
+  KEY `idx_refresh_family` (`family_id`),
+  KEY `idx_refresh_device` (`device_id`),
+  KEY `idx_refresh_replaced_by` (`replaced_by_token_id`),
+  CONSTRAINT `fk_refresh_user` FOREIGN KEY (`user_id`) REFERENCES `tbl_users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_refresh_franchise` FOREIGN KEY (`franchise_id`) REFERENCES `tbl_franchises` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_refresh_replaced_by` FOREIGN KEY (`replaced_by_token_id`) REFERENCES `tbl_refresh_tokens` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
+
+-- ================================================================
+-- 11. LOGIN ATTEMPTS
 -- ================================================================
 CREATE TABLE IF NOT EXISTS `tbl_login_attempts` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -414,7 +445,7 @@ DROP PROCEDURE IF EXISTS `sp_create_user_session`$$
 CREATE PROCEDURE `sp_create_user_session`(
   IN p_user_id BIGINT UNSIGNED,
   IN p_franchise_id BIGINT UNSIGNED,
-  IN p_token VARCHAR(255),
+  IN p_jti VARCHAR(255),
   IN p_ip_address VARCHAR(45),
   IN p_user_agent VARCHAR(255),
   IN p_expires_at TIMESTAMP,
@@ -423,9 +454,9 @@ CREATE PROCEDURE `sp_create_user_session`(
 )
 BEGIN
   INSERT INTO tbl_user_sessions (
-    franchise_id, user_id, token, remember_me, ip_address, user_agent, expires_at, session_data
+    franchise_id, user_id, token, jti, token_hash, remember_me, ip_address, user_agent, expires_at, session_data
   ) VALUES (
-    p_franchise_id, p_user_id, p_token, p_remember_me, p_ip_address, p_user_agent, p_expires_at, p_session_data
+    p_franchise_id, p_user_id, NULL, p_jti, SHA2(p_jti, 256), p_remember_me, p_ip_address, p_user_agent, p_expires_at, p_session_data
   );
 END$$
 
@@ -441,7 +472,7 @@ BEGIN
       ELSE 1
     END AS is_valid
   FROM tbl_user_sessions
-  WHERE token = p_jti
+  WHERE jti = p_jti
   LIMIT 1;
 END$$
 
@@ -452,7 +483,20 @@ CREATE PROCEDURE `sp_invalidate_session`(
 BEGIN
   UPDATE tbl_user_sessions
   SET invalidated_at = NOW()
-  WHERE token = p_jti;
+  WHERE jti = p_jti;
+END$$
+
+DROP PROCEDURE IF EXISTS `sp_invalidate_user_sessions`$$
+CREATE PROCEDURE `sp_invalidate_user_sessions`(
+  IN p_user_id BIGINT UNSIGNED,
+  IN p_franchise_id BIGINT UNSIGNED
+)
+BEGIN
+  UPDATE tbl_user_sessions
+  SET invalidated_at = NOW()
+  WHERE user_id = p_user_id
+    AND (p_franchise_id IS NULL OR franchise_id = p_franchise_id)
+    AND invalidated_at IS NULL;
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_log_failed_login`$$

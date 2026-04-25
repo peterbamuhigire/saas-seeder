@@ -1,0 +1,362 @@
+openapi: 3.1.0
+info:
+  title: SaaS Seeder API
+  version: 1.1.0
+  description: Contract for the SaaS Seeder v1 authentication API.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development
+  - url: https://yourdomain.com/api/v1
+    description: Production
+tags:
+  - name: Auth
+  - name: Public Auth
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate a user
+      operationId: authLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              username:
+                value:
+                  username: root
+                  password: password
+      responses:
+        '200':
+          description: Login succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccessResponse'
+              examples:
+                success:
+                  externalValue: ./examples/auth-login-success.json
+        '400':
+          $ref: '#/components/responses/MalformedJson'
+        '401':
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  externalValue: ./examples/auth-login-error.json
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate refresh token and issue a new access token
+      operationId: authRefresh
+      security:
+        - bearerAuth: []
+        - {}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token refresh succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPairResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke the current refresh token
+      operationId: authLogout
+      security:
+        - bearerAuth: []
+        - {}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Logout succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+  /auth/logout-all:
+    post:
+      tags: [Auth]
+      summary: Revoke all refresh tokens for the authenticated user
+      operationId: authLogoutAll
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id:
+                  type: string
+      responses:
+        '200':
+          description: Logout all succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+  /public/auth/register:
+    post:
+      tags: [Public Auth]
+      summary: Create a public signup request
+      operationId: publicAuthRegister
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Signup request created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, request_id, message, data]
+                properties:
+                  success:
+                    const: true
+                  request_id:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    required: [verify_token]
+                    properties:
+                      verify_token:
+                        type: string
+        '400':
+          $ref: '#/components/responses/MalformedJson'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    LoginRequest:
+      type: object
+      required: [password]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      anyOf:
+        - required: [username]
+        - required: [email]
+    RegisterRequest:
+      type: object
+      required: [email, password, franchise_name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        franchise_name:
+          type: string
+        plan:
+          type: string
+          default: trial
+        language:
+          type: string
+          default: en
+        country:
+          type: string
+        currency:
+          type: string
+          default: UGX
+        phone:
+          type: string
+    LoginSuccessResponse:
+      type: object
+      required: [success, request_id, data]
+      properties:
+        success:
+          const: true
+        request_id:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          required: [access_token, refresh_token, token_type, expires_in, user]
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            token_type:
+              const: Bearer
+            expires_in:
+              type: integer
+            user:
+              type: object
+              required: [id, username]
+              properties:
+                id:
+                  type: integer
+                franchise_id:
+                  type: [integer, 'null']
+                username:
+                  type: string
+                email:
+                  type: [string, 'null']
+                user_type:
+                  type: [string, 'null']
+    TokenPairResponse:
+      type: object
+      required: [success, request_id, data]
+      properties:
+        success:
+          const: true
+        request_id:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          required: [access_token, refresh_token, token_type, expires_in]
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            token_type:
+              const: Bearer
+            expires_in:
+              type: integer
+    MessageResponse:
+      type: object
+      required: [success, request_id]
+      properties:
+        success:
+          const: true
+        request_id:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+    ErrorResponse:
+      type: object
+      required: [success, error, request_id]
+      properties:
+        success:
+          const: false
+        error:
+          type: object
+          required: [code, message, details, documentation_url]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+            documentation_url:
+              type: string
+        request_id:
+          type: string
+  responses:
+    BadRequest:
+      description: Bad request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    MalformedJson:
+      description: Request body is not valid JSON.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Authentication failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Resource conflict.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validation:
+              externalValue: ./examples/validation-error.json
+    MethodNotAllowed:
+      description: Method not allowed.
+      headers:
+        Allow:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

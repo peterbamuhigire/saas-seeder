@@ -2,62 +2,44 @@
 declare(strict_types=1);
 
 /**
- * POST /auth/refresh
- * Rotates access and refresh tokens; revokes old refresh jti and persists new one.
+ * POST /api/v1/auth/refresh
+ * Rotates opaque refresh tokens and issues a new access token.
  */
 
-use App\Http\Auth\JwtService;
-use App\Http\Auth\RefreshTokenStore;
-use DateTime;
+use App\Auth\Token\{AccessTokenService, RefreshTokenRepository, RefreshTokenService};
 
 require_once __DIR__ . '/../../../bootstrap.php';
 
 require_method('POST');
 $body = read_json_body();
-$token = $body['refresh_token'] ?? bearer_token();
+$token = trim((string) ($body['refresh_token'] ?? bearer_token() ?? ''));
 
-if (!$token) {
-    json_response(400, ['success' => false, 'message' => 'Refresh token is required']);
+if ($token === '') {
+    errorResponse('Refresh token is required', 400);
 }
-
-$jwt = new JwtService();
 
 try {
-    $claims = $jwt->verify($token, 'refresh');
-} catch (\Exception $e) {
-    json_response(401, ['success' => false, 'message' => $e->getMessage()]);
+    $db = get_db();
+    $refreshTokens = new RefreshTokenService(
+        $db,
+        new AccessTokenService($db),
+        new RefreshTokenRepository($db),
+        (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000)
+    );
+    $pair = $refreshTokens->rotate(
+        $token,
+        isset($body['device_id']) ? trim((string) $body['device_id']) : null,
+        $_SERVER['HTTP_USER_AGENT'] ?? 'API Client',
+        $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
+    );
+
+    jsonResponse(true, [
+        'access_token' => $pair->accessToken,
+        'refresh_token' => $pair->refreshToken,
+        'token_type' => $pair->tokenType,
+        'expires_in' => $pair->expiresIn,
+    ], 'Token refreshed');
+} catch (\RuntimeException $e) {
+    $status = str_contains($e->getMessage(), 'reuse detected') ? 409 : 401;
+    errorResponse($e->getMessage(), $status);
 }
-
-$store = new RefreshTokenStore(get_db());
-
-// Revoke old refresh token jti
-if (!empty($claims['jti'])) {
-    $store->revokeByJti((string)$claims['jti']);
-}
-
-// Issue new pair with fresh jti (device preserved if present)
-$newJti = bin2hex(random_bytes(16));
-$newClaims = $claims;
-$newClaims['jti'] = $newJti;
-
-$accessToken = $jwt->issueAccessToken($newClaims);
-$refreshToken = $jwt->issueRefreshToken($newClaims);
-
-// Persist new refresh token
-$store->store(
-    userId: (int)($claims['sub'] ?? 0),
-    franchiseId: (int)($claims['fid'] ?? 0),
-    jti: $newJti,
-    deviceId: $claims['did'] ?? null,
-    expiresAt: (new DateTime())->setTimestamp(time() + (int)($_ENV['JWT_REFRESH_TTL'] ?? 2592000))
-);
-
-json_response(200, [
-    'success' => true,
-    'data' => [
-        'access_token' => $accessToken,
-        'refresh_token' => $refreshToken,
-        'token_type' => 'Bearer',
-        'expires_in' => (int)($_ENV['JWT_ACCESS_TTL'] ?? 900),
-    ],
-]);

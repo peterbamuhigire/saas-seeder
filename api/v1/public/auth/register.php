@@ -15,17 +15,8 @@ require_once __DIR__ . '/../../../../bootstrap.php';
 use App\Auth\Services\UserService;
 use App\Config\Database;
 
-// --- Method guard ---
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    errorResponse('Method not allowed', 405);
-}
-
-// --- Read JSON body ---
-$rawBody = file_get_contents('php://input');
-$body = json_decode($rawBody ?: '', true);
-if (!is_array($body)) {
-    errorResponse('Invalid JSON body', 400);
-}
+require_method('POST');
+$body = read_json_body();
 
 $email         = trim((string) ($body['email'] ?? ''));
 $password      = (string) ($body['password'] ?? '');

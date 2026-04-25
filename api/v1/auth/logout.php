@@ -2,35 +2,41 @@
 declare(strict_types=1);
 
 /**
- * POST /auth/logout
- * Revokes the provided refresh token (device-level logout).
+ * POST /api/v1/auth/logout
+ * Revokes the current refresh token/device and optional access token.
  */
 
-use App\Http\Auth\JwtService;
-use App\Http\Auth\RefreshTokenStore;
+use App\Auth\Token\{AccessTokenService, RefreshTokenRepository, RefreshTokenService};
 
 require_once __DIR__ . '/../../../bootstrap.php';
 
 require_method('POST');
 $body = read_json_body();
-$token = $body['refresh_token'] ?? bearer_token();
-if (!$token) {
-    json_response(400, ['success' => false, 'message' => 'Refresh token is required']);
+$bearerToken = bearer_token();
+$refreshToken = trim((string) ($body['refresh_token'] ?? $bearerToken ?? ''));
+$accessToken = isset($body['access_token'])
+    ? trim((string) $body['access_token'])
+    : (isset($body['refresh_token']) ? $bearerToken : null);
+
+if ($refreshToken === '') {
+    errorResponse('Refresh token is required', 400);
 }
 
-$jwt = new JwtService();
-try {
-    $claims = $jwt->verify($token, 'refresh');
-} catch (Exception $e) {
-    json_response(401, ['success' => false, 'message' => $e->getMessage()]);
+$db = get_db();
+$accessTokens = new AccessTokenService($db);
+$accessTokenForRevocation = null;
+
+if (is_string($accessToken) && trim($accessToken) !== '' && $accessTokens->validateClaims($accessToken) !== null) {
+    $accessTokenForRevocation = $accessToken;
 }
 
-$store = new RefreshTokenStore(get_db());
-if (!empty($claims['jti'])) {
-    $store->revokeByJti((string)$claims['jti']);
-}
+$refreshTokens = new RefreshTokenService(
+    $db,
+    $accessTokens,
+    new RefreshTokenRepository($db),
+    (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000)
+);
 
-json_response(200, [
-    'success' => true,
-    'message' => 'Logged out for this device',
-]);
+$refreshTokens->revokeCurrentDevice($refreshToken, $accessTokenForRevocation);
+
+jsonResponse(true, null, 'Logged out for this device');
