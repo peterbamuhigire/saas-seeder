@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\Security\CorsPolicy;
+
 final class CorsMiddleware
 {
     /**
@@ -11,13 +13,14 @@ final class CorsMiddleware
     public static function apply(array $allowedOrigins, string $appEnv = 'development'): void
     {
         $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        $resolvedOrigin = (new CorsPolicy())->resolveOrigin($origin, $allowedOrigins, $appEnv);
 
-        if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
-            header('Access-Control-Allow-Origin: ' . $origin);
-            header('Access-Control-Allow-Credentials: true');
-            header('Vary: Origin');
-        } elseif ($appEnv === 'development') {
-            header('Access-Control-Allow-Origin: *');
+        if ($resolvedOrigin !== null) {
+            header('Access-Control-Allow-Origin: ' . $resolvedOrigin);
+            if ($resolvedOrigin !== '*') {
+                header('Access-Control-Allow-Credentials: true');
+                header('Vary: Origin');
+            }
         }
 
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');

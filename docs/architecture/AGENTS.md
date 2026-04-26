@@ -18,6 +18,6 @@ This guide governs architecture documentation under `docs/architecture/`, includ
 
 ## Review Checklist
 
-- No blocking ADR contains `TBD`, `TODO`, or unresolved decision language.
+- No blocking ADR contains placeholder markers or unresolved decision language.
 - API, data, module, UI, testing, and release docs agree with the accepted ADRs.
 - Dependency changes are reflected in `docs/plans/april-world-class/dependency-map.md`.

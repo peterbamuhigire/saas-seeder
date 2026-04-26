@@ -3,13 +3,14 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\Security\SecurityHeaderPolicy;
+
 final class SecurityHeadersMiddleware
 {
     public static function apply(): void
     {
-        header('X-Content-Type-Options: nosniff');
-        header('X-Frame-Options: DENY');
-        header('Referrer-Policy: strict-origin-when-cross-origin');
-        header('Cache-Control: no-store');
+        foreach ((new SecurityHeaderPolicy())->headers($_ENV['APP_ENV'] ?? 'development') as $name => $value) {
+            header($name . ': ' . $value);
+        }
     }
 }

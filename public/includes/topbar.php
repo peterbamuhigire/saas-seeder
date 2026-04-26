@@ -27,7 +27,7 @@ $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
     <?php if (function_exists('isLoggedIn') && isLoggedIn()): ?>
     <div class="navbar-nav flex-row order-md-last">
       <div class="nav-item dropdown">
-        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Account menu">
+        <button type="button" class="nav-link d-flex lh-1 text-reset p-0 border-0 bg-transparent" data-bs-toggle="dropdown" aria-label="Account menu">
           <span class="avatar avatar-sm bg-primary-lt">
             <?php echo strtoupper(substr(getSession('full_name') ?: getSession('username') ?: '?', 0, 1)); ?>
           </span>
@@ -35,7 +35,7 @@ $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
             <div style="font-size:.85rem;font-weight:600;"><?php echo htmlspecialchars(getSession('full_name') ?: getSession('username') ?: 'User'); ?></div>
             <div class="mt-1 small text-secondary"><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', getSession('user_type') ?: 'user'))); ?></div>
           </div>
-        </a>
+        </button>
         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
           <a href="/change-password.php" class="dropdown-item">Change password</a>
           <div class="dropdown-divider"></div>

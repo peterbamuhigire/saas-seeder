@@ -168,10 +168,11 @@ paths:
                     type: string
                   data:
                     type: object
-                    required: [verify_token]
+                    description: Empty in production. Development may include verify_token for local testing.
                     properties:
                       verify_token:
                         type: string
+                        description: Development-only verification token. Production delivery must use email/SMS.
         '400':
           $ref: '#/components/responses/MalformedJson'
         '409':

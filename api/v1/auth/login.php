@@ -13,26 +13,34 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../bootstrap.php';
 
-require_method('POST');
-$body = read_json_body();
+use App\Auth\DTO\LoginDTO;
+use App\Auth\Helpers\{CookieHelper, PasswordHelper};
+use App\Auth\Services\{AuthService, PermissionService, TokenService};
+use App\Auth\Token\{AccessTokenService, RefreshTokenRepository, RefreshTokenService};
+use App\Config\Database;
+use App\Http\Middleware\{MethodGuard, RateLimitMiddleware};
+use App\Http\RateLimit\RateLimitPolicy;
+use App\Http\Request\JsonRequest;
+use App\Http\Response\{ApiError, ApiResponse};
+
+MethodGuard::require(['POST']);
+$body = JsonRequest::fromGlobals()->jsonBody();
 
 // --- Validate input ---
 $usernameOrEmail = trim((string) ($body['username'] ?? $body['email'] ?? ''));
 $password        = (string) ($body['password'] ?? '');
 
 if ($usernameOrEmail === '' || $password === '') {
-    errorResponse('Username/email and password are required', 422);
+    ApiResponse::error(new ApiError('VALIDATION_FAILED', 'Username/email and password are required', 422));
 }
 
-// --- Authenticate through centralized services ---
-use App\Auth\Services\{AuthService, TokenService, PermissionService};
-use App\Auth\Helpers\{PasswordHelper, CookieHelper};
-use App\Auth\DTO\LoginDTO;
-use App\Auth\Token\{AccessTokenService, RefreshTokenRepository, RefreshTokenService};
-use App\Config\Database;
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+RateLimitMiddleware::enforce(RateLimitPolicy::loginIp(), $clientIp);
+RateLimitMiddleware::enforce(RateLimitPolicy::loginIdentity(), $usernameOrEmail);
 
+// --- Authenticate through centralized services ---
 try {
-    $db = (new Database())->getConnection();
+    $db = Database::getInstance()->getConnection();
     $authService = new AuthService(
         $db,
         new TokenService($db),
@@ -44,7 +52,7 @@ try {
     $loginDTO = new LoginDTO(
         $usernameOrEmail,
         $password,
-        $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+        $clientIp,
         $_SERVER['HTTP_USER_AGENT'] ?? 'API Client'
     );
 
@@ -59,7 +67,7 @@ try {
             'ACCOUNT_SUSPENDED' => 403,
         ];
         $httpCode = $statusCodes[$result->getStatus()] ?? 401;
-        errorResponse('Invalid credentials', $httpCode);
+        ApiResponse::error(new ApiError('AUTH_INVALID_CREDENTIALS', 'Invalid credentials', $httpCode));
     }
 
     $userData = $result->getUserData();
@@ -80,10 +88,10 @@ try {
         $result->getFranchiseId(),
         isset($body['device_id']) ? trim((string) $body['device_id']) : null,
         $_SERVER['HTTP_USER_AGENT'] ?? 'API Client',
-        $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'
+        $clientIp
     );
 
-    jsonResponse(true, [
+    ApiResponse::success([
         'access_token' => $tokenPair->accessToken,
         'refresh_token' => $tokenPair->refreshToken,
         'token_type'   => $tokenPair->tokenType,
@@ -99,5 +107,5 @@ try {
 
 } catch (\Exception $e) {
     error_log('API login error: ' . $e->getMessage());
-    errorResponse('Internal server error', 500);
+    ApiResponse::error(new ApiError('INTERNAL_SERVER_ERROR', 'Internal server error', 500));
 }

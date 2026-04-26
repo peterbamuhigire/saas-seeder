@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../src/config/auth.php';
+require_once __DIR__ . '/includes/security-headers.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Auth\Helpers\{PasswordHelper, CSRFHelper};
@@ -36,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new \Exception(implode(' ', $errors));
         }
 
-        $db     = (new Database())->getConnection();
+        $db     = Database::getInstance()->getConnection();
         $userId = (int) getSession('user_id');
 
         // Verify current password

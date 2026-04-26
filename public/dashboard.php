@@ -45,7 +45,7 @@ $userRole = getSession('role_name', 'Administrator');
             <?php include __DIR__ . "/includes/topbar.php"; ?>
         </div>
 
-        <div class="page-wrapper">
+        <main id="main-body" class="page-wrapper" tabindex="-1">
             <!-- Page header -->
             <div class="page-header d-print-none">
                 <div class="container-xl">
@@ -122,7 +122,7 @@ $userRole = getSession('role_name', 'Administrator');
             <footer class="footer footer-transparent d-print-none">
                 <?php include __DIR__ . '/includes/footer.php'; ?>
             </footer>
-        </div>
+        </main>
     </div>
 
    <?php include __DIR__ . "/includes/foot.php"; ?>

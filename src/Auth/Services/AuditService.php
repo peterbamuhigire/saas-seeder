@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Auth\Services;
@@ -38,12 +39,12 @@ final class AuditService
         ?int $entityId = null,
         array $details = [],
     ): void {
-        $stmt = $this->db->prepare("
+        $stmt = $this->db->prepare('
             INSERT INTO tbl_audit_log
               (user_id, franchise_id, action, entity_type, entity_id, details, ip_address, user_agent, created_at)
             VALUES
               (?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        ");
+        ');
 
         $stmt->execute([
             $userId,

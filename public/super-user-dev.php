@@ -16,7 +16,7 @@
  *
  * All user creation is delegated to UserService (single source of truth).
  */
-require_once __DIR__ . '/../src/config/database.php';
+require_once __DIR__ . '/../src/config/Database.php';
 require_once __DIR__ . '/../src/config/session.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Delegate entirely to UserService — the single source of truth
         // for user creation, validation, hashing, and insertion.
-        $db = (new Database())->getConnection();
+        $db = Database::getInstance()->getConnection();
         $userService = new UserService($db);
 
         $newUser = $userService->createUser([

@@ -1,0 +1,20 @@
+.seeder-kpi-strip .card {
+  border-radius: var(--seeder-radius);
+}
+
+.seeder-filter-bar {
+  display: grid;
+  gap: var(--seeder-space-3);
+  margin-bottom: var(--seeder-space-4);
+}
+
+.seeder-state-grid {
+  display: grid;
+  gap: var(--seeder-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+#main-body:focus {
+  outline: 3px solid var(--seeder-focus);
+  outline-offset: 2px;
+}

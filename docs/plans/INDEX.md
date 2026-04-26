@@ -14,10 +14,10 @@
 
 | Phase | Plan | Status |
 |-------|------|--------|
-| 1 | [Governance Charter And Skill Contract Map](april-world-class/01/phase.md) | in-progress |
-| 2 | [Architecture Decisions, Context Map, And ADRs](april-world-class/02/phase.md) | pending |
-| 3 | [API Contract And Runtime Foundation](april-world-class/03/phase.md) | pending |
-| 4 | [Token Lifecycle And Auth Endpoint Rewrite](april-world-class/04/phase.md) | pending |
+| 1 | [Governance Charter And Skill Contract Map](april-world-class/01/phase.md) | implemented |
+| 2 | [Architecture Decisions, Context Map, And ADRs](april-world-class/02/phase.md) | implemented |
+| 3 | [API Contract And Runtime Foundation](april-world-class/03/phase.md) | implemented |
+| 4 | [Token Lifecycle And Auth Endpoint Rewrite](april-world-class/04/phase.md) | implemented |
 | 5 | [Database And Migration Governance](april-world-class/05/phase.md) | pending |
 | 6 | [Modular SaaS Registry And Tenant Gates](april-world-class/06/phase.md) | pending |
 | 7 | [Security Hardening, Rate Limiting, HTTP Policy](april-world-class/07/phase.md) | pending |

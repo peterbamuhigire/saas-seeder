@@ -1,25 +1,17 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Auth\DTO;
 
-final class LoginDTO
+final readonly class LoginDTO
 {
-    private string $username;
-    private string $password;
-    private ?string $ipAddress;
-    private ?string $userAgent;
-
     public function __construct(
-        string $username,
-        string $password,
-        ?string $ipAddress,
-        ?string $userAgent = null
+        private string $username,
+        private string $password,
+        private ?string $ipAddress,
+        private ?string $userAgent = null
     ) {
-        $this->username = $username;
-        $this->password = $password;
-        $this->ipAddress = $ipAddress;
-        $this->userAgent = $userAgent;
     }
 
     public function getUsername(): string

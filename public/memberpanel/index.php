@@ -17,7 +17,7 @@ $pageTitle = 'My Dashboard';
     <div class="sticky-top">
       <?php include __DIR__ . '/../includes/topbar.php'; ?>
     </div>
-    <div class="page-wrapper">
+    <main id="main-body" class="page-wrapper" tabindex="-1">
       <div class="page-header d-print-none">
         <div class="container-xl">
           <h2 class="page-title">My Dashboard</h2>
@@ -46,7 +46,7 @@ $pageTitle = 'My Dashboard';
       <footer class="footer footer-transparent d-print-none">
         <?php include __DIR__ . '/../includes/footer.php'; ?>
       </footer>
-    </div>
+    </main>
   </div>
   <?php include __DIR__ . '/../includes/foot.php'; ?>
 </body>

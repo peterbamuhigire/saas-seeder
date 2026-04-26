@@ -94,20 +94,15 @@ Stable error codes are documented in [error-model.md](error-model.md). Common co
 
 ## Runtime Notes
 
-`api/bootstrap.php` now delegates request IDs, JSON responses, method guards, bearer token extraction, CORS, and security headers to classes under `src/Http`.
+`api/bootstrap.php` delegates request IDs, JSON responses, CORS, and security headers to classes under `src/Http`.
 
-Temporary compatibility helpers remain because current endpoints still call legacy globals:
+Endpoints call the runtime classes directly:
 
-- `jsonResponse()`
-- `errorResponse()`
-- `json_response()`
-- `require_method()`
-- `read_json_body()`
-- `bearer_token()`
-- `get_db()`
-- `require_auth()`
-
-Removal note: these helpers should be removed during the Phase 04 endpoint rewrite once endpoints call the runtime classes directly.
+- `MethodGuard` for allowed methods.
+- `JsonRequest` for request body parsing.
+- `BearerAuth` for bearer token extraction.
+- `ApiResponse` and `ApiError` for response envelopes.
+- `Database` for PDO access.
 
 ## CORS
 

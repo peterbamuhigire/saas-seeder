@@ -2,20 +2,39 @@
     "name": "saas/seeder-template",
     "description": "SaaS Seeder Template - Ready-to-use authentication and RBAC system for new SaaS projects",
     "type": "project",
+    "license": "GPL-3.0-or-later",
     "require": {
-        "php": ">=8.0",
-        "ext-pdo": "*",
+        "php": "^8.3",
         "ext-json": "*",
-        "vlucas/phpdotenv": "^5.5",
-        "firebase/php-jwt": "^6.8"
+        "ext-pdo": "*",
+        "firebase/php-jwt": "^7.0",
+        "vlucas/phpdotenv": "^5.5"
     },
     "autoload": {
         "psr-4": {
+            "App\\Config\\": "src/config/",
             "App\\": "src/"
         }
     },
     "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.75",
+        "phpstan/phpstan": "^1.12",
         "phpunit/phpunit": "^10.0"
+    },
+    "scripts": {
+        "lint": "@php scripts/quality/lint-php.php",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "format": "php-cs-fixer fix --dry-run --diff",
+        "test": "phpunit",
+        "test:unit": "phpunit --testsuite Unit",
+        "test:feature": "phpunit --testsuite Feature",
+        "test:security": "phpunit --filter Security",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@format",
+            "@test"
+        ]
     },
     "config": {
         "optimize-autoloader": true,

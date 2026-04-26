@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Auth\Services;
@@ -27,50 +28,62 @@ final class PermissionService
     public function checkUserPermission(int $userId, string $permissionCode): bool
     {
         // Super admin bypass
-        if ($this->isSuperAdmin()) return true;
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
 
-            // Check user-level overrides first
-            $overrideStmt = $this->db->prepare("SELECT up.allowed FROM tbl_user_permissions up JOIN tbl_permissions p ON up.permission_id = p.id WHERE up.user_id = ? AND p.code = ? LIMIT 1");
-            $overrideStmt->execute([$userId, $permissionCode]);
-            $ov = $overrideStmt->fetch(PDO::FETCH_ASSOC);
-            if ($ov !== false) return (bool)(int)$ov['allowed'];
+        // Check user-level overrides first
+        $overrideStmt = $this->db->prepare('SELECT up.allowed FROM tbl_user_permissions up JOIN tbl_permissions p ON up.permission_id = p.id WHERE up.user_id = ? AND p.code = ? LIMIT 1');
+        $overrideStmt->execute([$userId, $permissionCode]);
+        $ov = $overrideStmt->fetch(PDO::FETCH_ASSOC);
+        if ($ov !== false) {
+            return (bool)(int)$ov['allowed'];
+        }
 
-            // Resolve permission id for further checks
-            $pidStmt = $this->db->prepare('SELECT id FROM tbl_permissions WHERE code = ? LIMIT 1');
-            $pidStmt->execute([$permissionCode]);
-            $permRow = $pidStmt->fetch(PDO::FETCH_ASSOC);
-            if (!$permRow) return false; // permission doesn't exist
-            $permissionId = (int)$permRow['id'];
+        // Resolve permission id for further checks
+        $pidStmt = $this->db->prepare('SELECT id FROM tbl_permissions WHERE code = ? LIMIT 1');
+        $pidStmt->execute([$permissionCode]);
+        $permRow = $pidStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$permRow) {
+            return false;
+        } // permission doesn't exist
+        $permissionId = (int)$permRow['id'];
 
-            // Check user roles: prefer global_role_id if present (new model)
-            $rolesStmt = $this->db->prepare('SELECT global_role_id, franchise_id FROM tbl_user_roles WHERE user_id = ?');
-            $rolesStmt->execute([$userId]);
-            $userRoles = $rolesStmt->fetchAll(PDO::FETCH_ASSOC);
+        // Check user roles: prefer global_role_id if present (new model)
+        $rolesStmt = $this->db->prepare('SELECT global_role_id, franchise_id FROM tbl_user_roles WHERE user_id = ?');
+        $rolesStmt->execute([$userId]);
+        $userRoles = $rolesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            foreach ($userRoles as $r) {
-                // If a mapped global_role_id exists, consult franchise overrides then default global permissions
-                if (!empty($r['global_role_id'])) {
-                    $globalRoleId = (int)$r['global_role_id'];
-                    $franchiseId = $r['franchise_id'] ?? null;
+        foreach ($userRoles as $r) {
+            // If a mapped global_role_id exists, consult franchise overrides then default global permissions
+            if (!empty($r['global_role_id'])) {
+                $globalRoleId = (int)$r['global_role_id'];
+                $franchiseId = $r['franchise_id'] ?? null;
 
-                    // Check if franchise has an override for this permission
-                    if ($franchiseId) {
-                        $frOverride = $this->db->prepare('SELECT is_enabled FROM tbl_franchise_role_overrides WHERE franchise_id = ? AND global_role_id = ? AND permission_id = ? LIMIT 1');
-                        $frOverride->execute([$franchiseId, $globalRoleId, $permissionId]);
-                        $fr = $frOverride->fetch(PDO::FETCH_ASSOC);
-                        if ($fr !== false) {
-                            if ((int)$fr['is_enabled'] === 1) return true; else continue; // explicit disable
-                        }
+                // Check if franchise has an override for this permission
+                if ($franchiseId) {
+                    $frOverride = $this->db->prepare('SELECT is_enabled FROM tbl_franchise_role_overrides WHERE franchise_id = ? AND global_role_id = ? AND permission_id = ? LIMIT 1');
+                    $frOverride->execute([$franchiseId, $globalRoleId, $permissionId]);
+                    $fr = $frOverride->fetch(PDO::FETCH_ASSOC);
+                    if ($fr !== false) {
+                        if ((int)$fr['is_enabled'] === 1) {
+                            return true;
+                        } else {
+                            continue;
+                        } // explicit disable
                     }
+                }
 
-                    // No override or override enabled, check if permission exists in global role defaults
-                    $grStmt = $this->db->prepare('SELECT COUNT(*) FROM tbl_global_role_permissions WHERE global_role_id = ? AND permission_id = ?');
-                    $grStmt->execute([$globalRoleId, $permissionId]);
-                    if ((int)$grStmt->fetchColumn() > 0) return true;
+                // No override or override enabled, check if permission exists in global role defaults
+                $grStmt = $this->db->prepare('SELECT COUNT(*) FROM tbl_global_role_permissions WHERE global_role_id = ? AND permission_id = ?');
+                $grStmt->execute([$globalRoleId, $permissionId]);
+                if ((int)$grStmt->fetchColumn() > 0) {
+                    return true;
                 }
             }
+        }
 
-            return false;
+        return false;
     }
 
     /**
@@ -96,7 +109,9 @@ final class PermissionService
         }
 
         // Super admin bypass
-        if ($this->isSuperAdmin()) return true;
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
 
         // Check user override first (franchise-scoped if provided)
         $overrideFranchise = $franchiseId;
@@ -104,7 +119,7 @@ final class PermissionService
             $overrideFranchise = hasSession('franchise_id') ? (int)getSession('franchise_id') : null;
         }
         if ($overrideFranchise !== null) {
-            $overrideStmt = $this->db->prepare("SELECT up.allowed, p.code FROM tbl_user_permissions up JOIN tbl_permissions p ON up.permission_id = p.id WHERE up.user_id = ? AND up.franchise_id = ? AND p.code = ? LIMIT 1");
+            $overrideStmt = $this->db->prepare('SELECT up.allowed, p.code FROM tbl_user_permissions up JOIN tbl_permissions p ON up.permission_id = p.id WHERE up.user_id = ? AND up.franchise_id = ? AND p.code = ? LIMIT 1');
             $overrideStmt->execute([$userId, $overrideFranchise, $permissionCode]);
             $ov = $overrideStmt->fetch(PDO::FETCH_ASSOC);
             if ($ov !== false) {
@@ -116,7 +131,9 @@ final class PermissionService
         $pidStmt = $this->db->prepare('SELECT id FROM tbl_permissions WHERE code = ? LIMIT 1');
         $pidStmt->execute([$permissionCode]);
         $perm = $pidStmt->fetch(PDO::FETCH_ASSOC);
-        if (!$perm) return false;
+        if (!$perm) {
+            return false;
+        }
         $permissionId = (int)$perm['id'];
 
         // Evaluate all roles for the user and apply franchise-scoped overrides and global role defaults
@@ -127,7 +144,9 @@ final class PermissionService
 
         foreach ($rows as $r) {
             // If a franchise filter is provided ensure row matches
-            if ($franchiseId !== null && (int)$r['franchise_id'] !== (int)$franchiseId) continue;
+            if ($franchiseId !== null && (int)$r['franchise_id'] !== (int)$franchiseId) {
+                continue;
+            }
 
             // Check global role path first
             if (!empty($r['global_role_id'])) {
@@ -136,13 +155,19 @@ final class PermissionService
                     $fo->execute([$franchiseId, (int)$r['global_role_id'], $permissionId]);
                     $fov = $fo->fetch(PDO::FETCH_ASSOC);
                     if ($fov !== false) {
-                        if ((int)$fov['is_enabled'] === 1) return true; else continue;
+                        if ((int)$fov['is_enabled'] === 1) {
+                            return true;
+                        } else {
+                            continue;
+                        }
                     }
                 }
 
                 $g = $this->db->prepare('SELECT COUNT(*) FROM tbl_global_role_permissions WHERE global_role_id = ? AND permission_id = ?');
                 $g->execute([(int)$r['global_role_id'], $permissionId]);
-                if ((int)$g->fetchColumn() > 0) return true;
+                if ((int)$g->fetchColumn() > 0) {
+                    return true;
+                }
             }
         }
 
@@ -177,9 +202,13 @@ final class PermissionService
     public function hasAnyPermission(int $userId, int $franchiseId, array $permissionCodes): bool
     {
         // Super admin bypass
-        if ($this->isSuperAdmin()) return true;
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
 
-        if (empty($permissionCodes)) return false;
+        if (empty($permissionCodes)) {
+            return false;
+        }
 
         foreach ($permissionCodes as $code) {
             if ($this->hasPermission($userId, $franchiseId, $code)) {
@@ -201,9 +230,13 @@ final class PermissionService
     public function hasAllPermissions(int $userId, int $franchiseId, array $permissionCodes): bool
     {
         // Super admin bypass
-        if ($this->isSuperAdmin()) return true;
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
 
-        if (empty($permissionCodes)) return true;
+        if (empty($permissionCodes)) {
+            return true;
+        }
 
         foreach ($permissionCodes as $code) {
             if (!$this->hasPermission($userId, $franchiseId, $code)) {
@@ -214,17 +247,17 @@ final class PermissionService
         return true;
     }
 
-    public function getUserPermissions(int $userId, ?int $franchiseId = null): array 
+    public function getUserPermissions(int $userId, ?int $franchiseId = null): array
     {
         // Try using stored procedure if available
         try {
             // If no franchiseId provided, use session context
             $fr = $franchiseId ?? (hasSession('franchise_id') ? (int)getSession('franchise_id') : null);
             if ($fr === null) {
-                $stmt = $this->db->prepare("CALL sp_get_user_permissions(?)");
+                $stmt = $this->db->prepare('CALL sp_get_user_permissions(?)');
                 $stmt->execute([$userId]);
             } else {
-                $stmt = $this->db->prepare("CALL sp_get_user_permissions(?, ?)");
+                $stmt = $this->db->prepare('CALL sp_get_user_permissions(?, ?)');
                 $stmt->execute([$userId, $fr]);
             }
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -286,7 +319,9 @@ final class PermissionService
                         $pCodeRow = $this->db->prepare('SELECT code, name, module FROM tbl_permissions WHERE id = ? LIMIT 1');
                         $pCodeRow->execute([$pId]);
                         $pc = $pCodeRow->fetch(PDO::FETCH_ASSOC);
-                        if (!$pc) continue;
+                        if (!$pc) {
+                            continue;
+                        }
                         $code = $pc['code'];
                         if ((int)$o['is_enabled'] === 1) {
                             $perms[$code] = ['code' => $code, 'name' => $pc['name'], 'module' => $pc['module'], 'role_name' => null, 'allowed' => true, 'permission_id' => $pId];
@@ -345,7 +380,7 @@ final class PermissionService
         return $map;
     }
 
-    public function assignRolePermission(int $roleId, int $permissionId, int $grantedBy): void 
+    public function assignRolePermission(int $roleId, int $permissionId, int $grantedBy): void
     {
         try {
             // If this is a global role, use new global_role_permissions table
@@ -363,14 +398,14 @@ final class PermissionService
             }
 
             // Fallback to legacy stored procedure for franchise-scoped roles
-            $stmt = $this->db->prepare("CALL sp_grant_role_permission(?, ?, ?)");
+            $stmt = $this->db->prepare('CALL sp_grant_role_permission(?, ?, ?)');
             $stmt->execute([$roleId, $permissionId, $grantedBy]);
         } catch (\PDOException $e) {
-            throw new \Exception("Failed to assign permission: " . $e->getMessage());
+            throw new \Exception('Failed to assign permission: ' . $e->getMessage());
         }
     }
 
-    public function revokeRolePermission(int $roleId, int $permissionId, int $revokedBy): void 
+    public function revokeRolePermission(int $roleId, int $permissionId, int $revokedBy): void
     {
         try {
             // If this is a global role, delete from global permissions
@@ -387,10 +422,10 @@ final class PermissionService
             }
 
             // Fallback to legacy stored procedure
-            $stmt = $this->db->prepare("CALL sp_revoke_role_permission(?, ?, ?)");
+            $stmt = $this->db->prepare('CALL sp_revoke_role_permission(?, ?, ?)');
             $stmt->execute([$roleId, $permissionId, $revokedBy]);
         } catch (\PDOException $e) {
-            throw new \Exception("Failed to revoke permission: " . $e->getMessage());
+            throw new \Exception('Failed to revoke permission: ' . $e->getMessage());
         }
     }
 
@@ -412,7 +447,7 @@ final class PermissionService
         }
     }
 
-    public function getRolePermissions(int $roleId): array 
+    public function getRolePermissions(int $roleId): array
     {
         try {
             // If roleId exists in tbl_global_roles treat it as a global_role_id
@@ -426,11 +461,11 @@ final class PermissionService
             }
 
             // Fallback to legacy stored procedure which expects role_id
-            $stmt = $this->db->prepare("CALL sp_get_role_permissions(?)");
+            $stmt = $this->db->prepare('CALL sp_get_role_permissions(?)');
             $stmt->execute([$roleId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
-            throw new \Exception("Failed to get role permissions: " . $e->getMessage());
+            throw new \Exception('Failed to get role permissions: ' . $e->getMessage());
         }
     }
 }

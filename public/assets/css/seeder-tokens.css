@@ -1,0 +1,13 @@
+:root {
+  --seeder-surface: #ffffff;
+  --seeder-subtle: #f6f8fb;
+  --seeder-border: #dbe3ec;
+  --seeder-text: #182230;
+  --seeder-muted: #64748b;
+  --seeder-focus: #206bc4;
+  --seeder-radius: 8px;
+  --seeder-space-1: 0.25rem;
+  --seeder-space-2: 0.5rem;
+  --seeder-space-3: 0.75rem;
+  --seeder-space-4: 1rem;
+}

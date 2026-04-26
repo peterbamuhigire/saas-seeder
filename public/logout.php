@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../src/config/database.php';
+require_once __DIR__ . '/../src/config/Database.php';
 require_once __DIR__ . '/../src/config/auth.php';
 
 use App\Config\Database;
@@ -18,7 +18,7 @@ try {
     $token = getSession('auth_token');
 
     if ($token) {
-        $db = (new Database())->getConnection();
+        $db = Database::getInstance()->getConnection();
         $authService = new AuthService(
             $db,
             new TokenService($db),

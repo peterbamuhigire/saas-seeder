@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../src/config/auth.php';
+require_once __DIR__ . '/includes/security-headers.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Helpers\UiHelper;

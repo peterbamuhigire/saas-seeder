@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Auth\DTO;
@@ -6,32 +7,20 @@ namespace App\Auth\DTO;
 /**
  * Data Transfer Object for authentication results
  */
-final class AuthResult
+final readonly class AuthResult
 {
-    private int $userId;
-    private ?int $franchiseId;
-    private string $username;
-    private string $status;
-    private array $userData;
-    private ?string $token;
-    private ?string $message;
-
+    /**
+     * @param array<string, mixed> $userData
+     */
     public function __construct(
-        int $userId,
-        ?int $franchiseId,
-        string $username, 
-        string $status,
-        array $userData = [],
-        ?string $token = null,
-        ?string $message = null
+        private int $userId,
+        private ?int $franchiseId,
+        private string $username,
+        private string $status,
+        private array $userData = [],
+        private ?string $token = null,
+        private ?string $message = null
     ) {
-        $this->userId = $userId;
-        $this->franchiseId = $franchiseId;
-        $this->username = $username;
-        $this->status = $status;
-        $this->userData = $userData;
-        $this->token = $token;
-        $this->message = $message;
     }
 
     /**
@@ -45,7 +34,7 @@ final class AuthResult
     /**
      * Get authenticated user ID
      */
-    public function getUserId(): int 
+    public function getUserId(): int
     {
         return $this->userId;
     }
@@ -110,7 +99,7 @@ final class AuthResult
             'status' => $this->status,
             'userData' => $this->userData,
             'token' => $this->token,
-            'message' => $this->message
+            'message' => $this->message,
         ];
     }
 }

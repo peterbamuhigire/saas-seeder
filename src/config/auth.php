@@ -222,7 +222,18 @@ function auditLog(string $action, string $entityType = '', ?int $entityId = null
  */
 function hasModuleAccess(string $moduleCode): bool
 {
-    return true;
+    if (!isLoggedIn()) {
+        return false;
+    }
+
+    $db = \App\Config\Database::getInstance()->getConnection();
+    $service = new \App\Modules\ModuleAccessService($db);
+
+    return $service->hasAccess(
+        getSession('franchise_id') !== null ? (int) getSession('franchise_id') : null,
+        $moduleCode,
+        (string) (getSession('user_type') ?? '')
+    );
 }
 
 /**
@@ -232,7 +243,7 @@ function hasModuleAccess(string $moduleCode): bool
 function requireModuleAccess(string $moduleCode): void
 {
     if (!hasModuleAccess($moduleCode)) {
-        header('Location: /access-denied.php?reason=module_disabled&module=' . urlencode($moduleCode));
+        header('Location: /module-disabled.php?module=' . urlencode(strtoupper($moduleCode)));
         exit();
     }
 }

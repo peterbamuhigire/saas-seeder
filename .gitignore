@@ -31,6 +31,8 @@ public/uploads/*
 # Cache
 /cache/
 /tmp/
+.phpunit.cache/
+.php-cs-fixer.cache
 
 # Node modules (if using npm/yarn)
 node_modules/

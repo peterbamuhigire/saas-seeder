@@ -1,6 +1,7 @@
 <?php
-require_once __DIR__ . '/../src/config/database.php';
+require_once __DIR__ . '/../src/config/Database.php';
 require_once __DIR__ . '/../src/config/auth.php';
+require_once __DIR__ . '/includes/security-headers.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Auth\Services\{AuthService, TokenService, PermissionService};
@@ -65,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Initialize services
-    $db = (new Database())->getConnection();
+    $db = Database::getInstance()->getConnection();
     $authService = new AuthService(
       $db,
       new TokenService($db),

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Auth\Token\AccessTokenService;
+use App\Config\Database;
 use App\Http\Request\JsonRequest;
 use App\Http\Response\ApiError;
 
@@ -26,19 +28,18 @@ final class BearerAuth
 
     public static function requireClaims(string $tokenType = 'access', ?JsonRequest $request = null): array
     {
+        if ($tokenType !== 'access') {
+            throw new ApiError('AUTH_TOKEN_TYPE_UNSUPPORTED', 'Only access bearer tokens are supported here', 400);
+        }
+
         $token = self::requireToken($request);
-        $jwtService = 'App\\Http\\Auth\\JwtService';
+        $db = Database::getInstance()->getConnection();
+        $claims = (new AccessTokenService($db))->validateClaims($token);
 
-        if (!class_exists($jwtService)) {
-            throw new ApiError('AUTH_RUNTIME_UNAVAILABLE', 'JWT runtime is not available', 501);
+        if ($claims === null) {
+            throw new ApiError('AUTH_INVALID_TOKEN', 'Invalid access token', 401);
         }
 
-        try {
-            $claims = (new $jwtService())->verify($token, $tokenType);
-        } catch (\Throwable $exception) {
-            throw new ApiError('AUTH_INVALID_TOKEN', $exception->getMessage(), 401);
-        }
-
-        return is_array($claims) ? $claims : [];
+        return $claims->toArray();
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Auth\Services;
@@ -90,7 +91,7 @@ final class UserService
 
         // --- Non-super-admin users must have a franchise_id ---
         if ($userType !== 'super_admin' && $franchiseId === null) {
-            throw new \InvalidArgumentException("Non-super-admin users must have a franchise_id.");
+            throw new \InvalidArgumentException('Non-super-admin users must have a franchise_id.');
         }
 
         // --- Validate password strength ---
@@ -106,12 +107,12 @@ final class UserService
         $hashedPassword = $this->passwordHelper->hashPassword($password);
 
         // --- Insert ---
-        $stmt = $this->db->prepare("
+        $stmt = $this->db->prepare('
             INSERT INTO tbl_users
               (franchise_id, username, user_type, email, password_hash, first_name, last_name, phone, status, force_password_change, created_at)
             VALUES
               (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        ");
+        ');
 
         $success = $stmt->execute([
             $franchiseId,
@@ -169,7 +170,7 @@ final class UserService
     private function assertUniqueUser(string $username, string $email, ?int $franchiseId): void
     {
         // Username must be globally unique
-        $stmt = $this->db->prepare("SELECT id FROM tbl_users WHERE username = ? LIMIT 1");
+        $stmt = $this->db->prepare('SELECT id FROM tbl_users WHERE username = ? LIMIT 1');
         $stmt->execute([$username]);
         if ($stmt->fetch()) {
             throw new \RuntimeException("Username '{$username}' is already taken.");
@@ -177,10 +178,10 @@ final class UserService
 
         // Email must be unique within the same franchise (or globally for super admins)
         if ($franchiseId === null) {
-            $stmt = $this->db->prepare("SELECT id FROM tbl_users WHERE email = ? AND franchise_id IS NULL LIMIT 1");
+            $stmt = $this->db->prepare('SELECT id FROM tbl_users WHERE email = ? AND franchise_id IS NULL LIMIT 1');
             $stmt->execute([$email]);
         } else {
-            $stmt = $this->db->prepare("SELECT id FROM tbl_users WHERE email = ? AND franchise_id = ? LIMIT 1");
+            $stmt = $this->db->prepare('SELECT id FROM tbl_users WHERE email = ? AND franchise_id = ? LIMIT 1');
             $stmt->execute([$email, $franchiseId]);
         }
         if ($stmt->fetch()) {
