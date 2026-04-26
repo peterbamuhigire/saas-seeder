@@ -11,5 +11,5 @@ Priority coverage:
 Run:
 
 ```powershell
-composer test
+.\scripts\quality\check.ps1
 ```

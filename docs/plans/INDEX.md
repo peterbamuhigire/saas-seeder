@@ -18,14 +18,14 @@
 | 2 | [Architecture Decisions, Context Map, And ADRs](april-world-class/02/phase.md) | implemented |
 | 3 | [API Contract And Runtime Foundation](april-world-class/03/phase.md) | implemented |
 | 4 | [Token Lifecycle And Auth Endpoint Rewrite](april-world-class/04/phase.md) | implemented |
-| 5 | [Database And Migration Governance](april-world-class/05/phase.md) | pending |
-| 6 | [Modular SaaS Registry And Tenant Gates](april-world-class/06/phase.md) | pending |
-| 7 | [Security Hardening, Rate Limiting, HTTP Policy](april-world-class/07/phase.md) | pending |
-| 8 | [PHP Modernization And Service Architecture](april-world-class/08/phase.md) | pending |
-| 9 | [UI Shell, Design System, Form UX, Primitives](april-world-class/09/phase.md) | pending |
-| 10 | [Automated Tests, CI, Static Analysis, Quality Gates](april-world-class/10/phase.md) | pending |
-| 11 | [Observability, Operations, Release Evidence](april-world-class/11/phase.md) | pending |
-| 12 | [Final Certification, Docs Sync, Score Closure](april-world-class/12/phase.md) | pending |
+| 5 | [Database And Migration Governance](april-world-class/05/phase.md) | implemented |
+| 6 | [Modular SaaS Registry And Tenant Gates](april-world-class/06/phase.md) | implemented |
+| 7 | [Security Hardening, Rate Limiting, HTTP Policy](april-world-class/07/phase.md) | implemented |
+| 8 | [PHP Modernization And Service Architecture](april-world-class/08/phase.md) | implemented |
+| 9 | [UI Shell, Design System, Form UX, Primitives](april-world-class/09/phase.md) | implemented |
+| 10 | [Automated Tests, CI, Static Analysis, Quality Gates](april-world-class/10/phase.md) | implemented |
+| 11 | [Observability, Operations, Release Evidence](april-world-class/11/phase.md) | implemented |
+| 12 | [Final Certification, Docs Sync, Score Closure](april-world-class/12/phase.md) | implemented |
 
 ---
 

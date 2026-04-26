@@ -7,11 +7,14 @@ declare(strict_types=1);
  */
 
 use App\Auth\Token\{AccessTokenService, RefreshTokenRepository, RefreshTokenService};
+use App\Auth\Security\AuthAuditLogger;
+use App\Auth\Services\AuditService;
 use App\Config\Database;
 use App\Http\Middleware\{BearerAuth, MethodGuard, RateLimitMiddleware};
 use App\Http\RateLimit\RateLimitPolicy;
 use App\Http\Request\JsonRequest;
 use App\Http\Response\{ApiError, ApiResponse};
+use App\Observability\Logger;
 
 require_once __DIR__ . '/../../../bootstrap.php';
 
@@ -27,11 +30,13 @@ RateLimitMiddleware::enforce(RateLimitPolicy::refresh(), $_SERVER['REMOTE_ADDR']
 
 try {
     $db = Database::getInstance()->getConnection();
+    $logger = Logger::fromGlobals();
     $refreshTokens = new RefreshTokenService(
         $db,
         new AccessTokenService($db),
         new RefreshTokenRepository($db),
-        (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000)
+        (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000),
+        new AuthAuditLogger(new AuditService($db))
     );
     $pair = $refreshTokens->rotate(
         $token,
@@ -47,6 +52,10 @@ try {
         'expires_in' => $pair->expiresIn,
     ], 'Token refreshed');
 } catch (\RuntimeException $e) {
+    ($logger ?? Logger::fromGlobals())->warning('API refresh rejected', [
+        'exception' => $e::class,
+        'message' => $e->getMessage(),
+    ]);
     $status = str_contains($e->getMessage(), 'reuse detected') ? 409 : 401;
     $code = $status === 409 ? 'AUTH_REFRESH_REUSE_DETECTED' : 'AUTH_INVALID_REFRESH_TOKEN';
     ApiResponse::error(new ApiError($code, $e->getMessage(), $status));

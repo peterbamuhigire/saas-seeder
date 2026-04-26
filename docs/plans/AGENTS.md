@@ -18,20 +18,20 @@
 **Goal:** Bring SaaS Seeder from a strong auth/RBAC starter to a 99.99/100 reusable SaaS scaffold using the enhanced skill standards.  
 **Index:** [april-world-class/README.md](april-world-class/README.md)
 
-| Phase | File | Focus |
-|-------|------|-------|
-| 1 | [april-world-class/01/phase.md](april-world-class/01/phase.md) | Governance charter and skill contract map |
-| 2 | [april-world-class/02/phase.md](april-world-class/02/phase.md) | Architecture decisions, context map, ADRs |
-| 3 | [april-world-class/03/phase.md](april-world-class/03/phase.md) | API contract and runtime foundation |
-| 4 | [april-world-class/04/phase.md](april-world-class/04/phase.md) | Token lifecycle and auth endpoint rewrite |
-| 5 | [april-world-class/05/phase.md](april-world-class/05/phase.md) | Database and migration governance |
-| 6 | [april-world-class/06/phase.md](april-world-class/06/phase.md) | Modular SaaS registry and tenant gates |
-| 7 | [april-world-class/07/phase.md](april-world-class/07/phase.md) | Security hardening, rate limiting, HTTP policy |
-| 8 | [april-world-class/08/phase.md](april-world-class/08/phase.md) | PHP modernization and service architecture |
-| 9 | [april-world-class/09/phase.md](april-world-class/09/phase.md) | UI shell, design system, form UX, primitives |
-| 10 | [april-world-class/10/phase.md](april-world-class/10/phase.md) | Automated tests, CI, static analysis, quality gates |
-| 11 | [april-world-class/11/phase.md](april-world-class/11/phase.md) | Observability, operations, release evidence |
-| 12 | [april-world-class/12/phase.md](april-world-class/12/phase.md) | Final certification, docs sync, score closure |
+| Phase | File | Focus | Status |
+|-------|------|-------|--------|
+| 1 | [april-world-class/01/phase.md](april-world-class/01/phase.md) | Governance charter and skill contract map | completed |
+| 2 | [april-world-class/02/phase.md](april-world-class/02/phase.md) | Architecture decisions, context map, ADRs | completed |
+| 3 | [april-world-class/03/phase.md](april-world-class/03/phase.md) | API contract and runtime foundation | completed |
+| 4 | [april-world-class/04/phase.md](april-world-class/04/phase.md) | Token lifecycle and auth endpoint rewrite | completed |
+| 5 | [april-world-class/05/phase.md](april-world-class/05/phase.md) | Database and migration governance | completed |
+| 6 | [april-world-class/06/phase.md](april-world-class/06/phase.md) | Modular SaaS registry and tenant gates | completed |
+| 7 | [april-world-class/07/phase.md](april-world-class/07/phase.md) | Security hardening, rate limiting, HTTP policy | completed |
+| 8 | [april-world-class/08/phase.md](april-world-class/08/phase.md) | PHP modernization and service architecture | completed |
+| 9 | [april-world-class/09/phase.md](april-world-class/09/phase.md) | UI shell, design system, form UX, primitives | completed |
+| 10 | [april-world-class/10/phase.md](april-world-class/10/phase.md) | Automated tests, CI, static analysis, quality gates | completed |
+| 11 | [april-world-class/11/phase.md](april-world-class/11/phase.md) | Observability, operations, release evidence | completed |
+| 12 | [april-world-class/12/phase.md](april-world-class/12/phase.md) | Final certification, docs sync, score closure | completed |
 
 **Execution order:** Phase 1 -> 2 -> 3/5/8 planning lanes, with Phase 4 on the API critical path, Phase 6 after migration governance, Phase 9 after shell/module decisions, Phase 10 before release evidence, and Phase 12 last.
 

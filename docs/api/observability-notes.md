@@ -14,12 +14,35 @@ Clients should include the `request_id` when reporting API failures.
 
 Runtime errors are logged without secrets. Do not log raw passwords, bearer tokens, refresh tokens, cookie values, or full authorization headers.
 
-## Metrics To Add
+Log records should include:
 
-Later API runtime work should add counters for:
+- `request_id`
+- request method
+- request path
+- stable error or audit event name
+- tenant or franchise scope when known
 
-- Authentication success and failure by stable error code
-- Method guard failures
-- Malformed JSON failures
-- Token refresh rotations and revocations
-- Rate limit decisions
+## Audit Event Catalog
+
+- `auth.login.success`
+- `auth.login.failure`
+- `auth.lockout`
+- `auth.password.changed`
+- `auth.token.refreshed`
+- `auth.token.reuse_detected`
+- `auth.logout`
+- `auth.logout_all`
+- `permission.override`
+- `module.enabled`
+- `module.disabled`
+- `migration.applied`
+
+## Metrics And Review Signals
+
+- login success and failure by stable status
+- lockout count by window
+- refresh reuse detections
+- logout and logout-all volume
+- 401, 409, 422, and 429 response rates
+- request latency by endpoint
+- migration failure count during controlled releases

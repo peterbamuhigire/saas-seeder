@@ -4,7 +4,9 @@ require_once __DIR__ . '/includes/security-headers.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use App\Auth\Helpers\{PasswordHelper, CSRFHelper};
+use App\Auth\Services\AuditService;
 use App\Config\Database;
+use App\Observability\AuditEvent;
 use Dotenv\Dotenv;
 
 $dotenv = Dotenv::createImmutable(__DIR__ . '/..');
@@ -56,6 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             "UPDATE tbl_users SET password_hash = ?, force_password_change = 0, updated_at = NOW() WHERE id = ?"
         );
         $stmt->execute([$newHash, $userId]);
+
+        $audit = new AuditService($db);
+        $audit->log(AuditEvent::AUTH_PASSWORD_CHANGED, $userId, (int) (getSession('franchise_id') ?? 0) ?: null, 'user', $userId, [
+            'force_password_change_cleared' => true,
+        ]);
 
         // Clear the force_password_change session flag
         setSession('force_password_change', 0);

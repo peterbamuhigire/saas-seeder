@@ -7,6 +7,8 @@ declare(strict_types=1);
  */
 
 use App\Auth\Token\{AccessTokenService, RefreshTokenRepository, RefreshTokenService};
+use App\Auth\Security\AuthAuditLogger;
+use App\Auth\Services\AuditService;
 use App\Config\Database;
 use App\Http\Middleware\{BearerAuth, MethodGuard, RateLimitMiddleware};
 use App\Http\RateLimit\RateLimitPolicy;
@@ -41,7 +43,8 @@ $refreshTokens = new RefreshTokenService(
     $db,
     $accessTokens,
     new RefreshTokenRepository($db),
-    (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000)
+    (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000),
+    new AuthAuditLogger(new AuditService($db))
 );
 
 $refreshTokens->revokeCurrentDevice($refreshToken, $accessTokenForRevocation);

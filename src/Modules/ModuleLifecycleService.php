@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules;
 
 use App\Auth\Services\AuditService;
+use App\Observability\AuditEvent;
 use RuntimeException;
 use PDO;
 
@@ -37,7 +38,7 @@ final class ModuleLifecycleService
              ON DUPLICATE KEY UPDATE status = 'enabled', enabled_at = CURRENT_TIMESTAMP, enabled_by = VALUES(enabled_by), disabled_at = NULL, disabled_by = NULL"
         );
         $stmt->execute([$franchiseId, $code, $actorUserId]);
-        $this->audit('module.enabled', $franchiseId, $code, $actorUserId);
+        $this->audit(AuditEvent::MODULE_ENABLED, $franchiseId, $code, $actorUserId);
     }
 
     public function disable(int $franchiseId, string $moduleCode, ?int $actorUserId = null, bool $allowCore = false): void
@@ -54,7 +55,7 @@ final class ModuleLifecycleService
              WHERE franchise_id = ? AND module_code = ?"
         );
         $stmt->execute([$actorUserId, $franchiseId, $code]);
-        $this->audit('module.disabled', $franchiseId, $code, $actorUserId);
+        $this->audit(AuditEvent::MODULE_DISABLED, $franchiseId, $code, $actorUserId);
     }
 
     private function audit(string $action, int $franchiseId, string $moduleCode, ?int $actorUserId): void

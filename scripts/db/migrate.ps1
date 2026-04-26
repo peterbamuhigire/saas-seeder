@@ -29,6 +29,7 @@ if ($WithSeeds) {
 
 foreach ($file in $files) {
     Write-Host "Applying $($file.Name)"
+    $startedAt = Get-Date
     $args = @("-h", $HostName, "-u", $User, $Database)
     if ($Password) { $args = @("-h", $HostName, "-u", $User, "-p$Password", $Database) }
     Get-Content -Raw -LiteralPath $file.FullName | & $mysql.Source @args
@@ -36,8 +37,15 @@ foreach ($file in $files) {
         throw "Migration failed: $($file.FullName)"
     }
 
+    $executionMs = [int]((Get-Date) - $startedAt).TotalMilliseconds
     $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant()
     $migrationId = $file.BaseName.Replace("'", "''")
-    $ledgerSql = "INSERT INTO tbl_schema_migrations (migration_id, checksum, applied_by, execution_ms) VALUES ('$migrationId', '$hash', CURRENT_USER(), 0) ON DUPLICATE KEY UPDATE checksum = VALUES(checksum), applied_at = CURRENT_TIMESTAMP, applied_by = VALUES(applied_by);"
+    $ledgerSql = "INSERT INTO tbl_schema_migrations (migration_id, checksum, applied_by, execution_ms) VALUES ('$migrationId', '$hash', CURRENT_USER(), $executionMs) ON DUPLICATE KEY UPDATE checksum = VALUES(checksum), applied_at = CURRENT_TIMESTAMP, applied_by = VALUES(applied_by), execution_ms = VALUES(execution_ms);"
     & $mysql.Source @args "--execute=$ledgerSql"
+
+    $auditTable = & $mysql.Source @args "--batch" "--skip-column-names" "--execute=SHOW TABLES LIKE 'tbl_audit_log';"
+    if ($auditTable -match 'tbl_audit_log') {
+        $auditSql = "INSERT INTO tbl_audit_log (action, entity_type, entity_id, details, created_at) VALUES ('migration.applied', 'schema_migration', NULL, JSON_OBJECT('migration_id', '$migrationId', 'checksum', '$hash', 'execution_ms', $executionMs, 'request_id', 'migration-$migrationId'), NOW());"
+        & $mysql.Source @args "--execute=$auditSql"
+    }
 }

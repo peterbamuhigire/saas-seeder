@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Auth\Token;
 
+use App\Auth\Security\AuthAuditLogger;
+use App\Observability\AuditEvent;
 use PDO;
 
 final class RefreshTokenService
@@ -11,7 +13,8 @@ final class RefreshTokenService
         private readonly PDO $db,
         private readonly AccessTokenService $accessTokens,
         private readonly RefreshTokenRepository $refreshTokens,
-        private readonly int $refreshTtlSeconds = 2592000
+        private readonly int $refreshTtlSeconds = 2592000,
+        private readonly ?AuthAuditLogger $audit = null
     ) {
     }
 
@@ -47,6 +50,10 @@ final class RefreshTokenService
         if ($current->revokedAt !== null || $current->reuseDetectedAt !== null) {
             $this->refreshTokens->markReuseDetected($current);
             $this->refreshTokens->revokeFamily($current->familyId, TokenRevocationReason::REUSE_DETECTED);
+            $this->audit?->log(AuditEvent::AUTH_TOKEN_REUSE_DETECTED, $current->userId, $current->franchiseId, [
+                'family_id' => $current->familyId,
+                'device_id' => $current->deviceId,
+            ]);
             throw new \RuntimeException('Refresh token reuse detected.');
         }
 
@@ -84,6 +91,12 @@ final class RefreshTokenService
             $userAgent
         );
 
+        $this->audit?->log(AuditEvent::AUTH_TOKEN_REFRESHED, $current->userId, $current->franchiseId, [
+            'family_id' => $current->familyId,
+            'device_id' => $deviceId ?? $current->deviceId,
+            'issued_via' => 'rotate',
+        ]);
+
         return new TokenPair(
             $access['token'],
             $plainRefreshToken,
@@ -99,6 +112,13 @@ final class RefreshTokenService
 
         if ($current !== null) {
             $this->refreshTokens->revokeTokenId($current->id, $reason);
+            if ($reason === TokenRevocationReason::LOGOUT) {
+                $this->audit?->log(AuditEvent::AUTH_LOGOUT, $current->userId, $current->franchiseId, [
+                    'reason' => $reason->value,
+                    'device_id' => $current->deviceId,
+                    'family_id' => $current->familyId,
+                ]);
+            }
         }
     }
 
@@ -124,6 +144,9 @@ final class RefreshTokenService
              WHERE user_id = ? AND (? IS NULL OR franchise_id = ?)'
         );
         $stmt->execute([$userId, $franchiseId, $franchiseId]);
+        $this->audit?->log(AuditEvent::AUTH_LOGOUT_ALL, $userId, $franchiseId, [
+            'reason' => $reason->value,
+        ]);
     }
 
     private function createPair(
@@ -149,6 +172,12 @@ final class RefreshTokenService
             $ipAddress,
             $refreshExpiresAt
         );
+
+        $this->audit?->log(AuditEvent::AUTH_TOKEN_REFRESHED, $userId, $franchiseId, [
+            'family_id' => $familyId,
+            'device_id' => $deviceId,
+            'issued_via' => 'issue_pair',
+        ]);
 
         return new TokenPair(
             $access['token'],

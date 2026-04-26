@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Auth\Services;
 
+use App\Observability\RequestContext;
 use PDO;
 
 /**
@@ -14,11 +15,10 @@ use PDO;
  */
 final class AuditService
 {
-    private PDO $db;
-
-    public function __construct(PDO $db)
-    {
-        $this->db = $db;
+    public function __construct(
+        private readonly PDO $db,
+        private readonly ?RequestContext $context = null
+    ) {
     }
 
     /**
@@ -52,9 +52,24 @@ final class AuditService
             $action,
             $entityType !== '' ? $entityType : null,
             $entityId,
-            !empty($details) ? json_encode($details) : null,
-            $_SERVER['REMOTE_ADDR'] ?? null,
-            $_SERVER['HTTP_USER_AGENT'] ?? null,
+            $this->encodeDetails($details),
+            $this->requestContext()->ipAddress(),
+            $this->requestContext()->userAgent(),
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $details
+     */
+    private function encodeDetails(array $details): ?string
+    {
+        $payload = $this->requestContext()->withAuditDetails($details);
+
+        return $payload === [] ? null : json_encode($payload, JSON_UNESCAPED_SLASHES);
+    }
+
+    private function requestContext(): RequestContext
+    {
+        return $this->context ?? RequestContext::fromGlobals();
     }
 }

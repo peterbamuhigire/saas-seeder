@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace App\Auth\Services;
 
+use App\Observability\AuditEvent;
 use PDO;
 
 final class PermissionService
 {
     private PDO $db;
+    private ?AuditService $audit;
 
-    public function __construct(PDO $db)
+    public function __construct(PDO $db, ?AuditService $audit = null)
     {
         $this->db = $db;
+        $this->audit = $audit;
 
         // Initialize session helpers if not already loaded
         if (!function_exists('hasSession')) {
@@ -442,6 +445,11 @@ final class PermissionService
             // Bump franchise permission_version to invalidate tokens for the franchise
             $inc = $this->db->prepare('UPDATE tbl_franchises SET permission_version = COALESCE(permission_version, 0) + 1 WHERE id = ?');
             $inc->execute([$franchiseId]);
+
+            $this->audit?->log(AuditEvent::PERMISSION_OVERRIDE, $changedBy, $franchiseId, 'permission', $permissionId, [
+                'global_role_id' => $globalRoleId,
+                'is_enabled' => $isEnabled,
+            ]);
         } catch (\Exception $e) {
             throw new \Exception('Failed to set franchise role override: ' . $e->getMessage());
         }

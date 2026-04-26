@@ -15,13 +15,16 @@ require_once __DIR__ . '/../../../bootstrap.php';
 
 use App\Auth\DTO\LoginDTO;
 use App\Auth\Helpers\{CookieHelper, PasswordHelper};
+use App\Auth\Security\AuthAuditLogger;
 use App\Auth\Services\{AuthService, PermissionService, TokenService};
+use App\Auth\Services\AuditService;
 use App\Auth\Token\{AccessTokenService, RefreshTokenRepository, RefreshTokenService};
 use App\Config\Database;
 use App\Http\Middleware\{MethodGuard, RateLimitMiddleware};
 use App\Http\RateLimit\RateLimitPolicy;
 use App\Http\Request\JsonRequest;
 use App\Http\Response\{ApiError, ApiResponse};
+use App\Observability\Logger;
 
 MethodGuard::require(['POST']);
 $body = JsonRequest::fromGlobals()->jsonBody();
@@ -41,12 +44,15 @@ RateLimitMiddleware::enforce(RateLimitPolicy::loginIdentity(), $usernameOrEmail)
 // --- Authenticate through centralized services ---
 try {
     $db = Database::getInstance()->getConnection();
+    $logger = Logger::fromGlobals();
+    $audit = new AuthAuditLogger(new AuditService($db));
     $authService = new AuthService(
         $db,
         new TokenService($db),
         new PermissionService($db),
         new PasswordHelper(),
-        new CookieHelper()
+        new CookieHelper(),
+        $audit
     );
 
     $loginDTO = new LoginDTO(
@@ -81,7 +87,8 @@ try {
         $db,
         $accessTokens,
         new RefreshTokenRepository($db),
-        (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000)
+        (int) ($_ENV['JWT_REFRESH_TTL'] ?? 2592000),
+        $audit
     );
     $tokenPair = $refreshTokens->issuePair(
         $result->getUserId(),
@@ -106,6 +113,9 @@ try {
     ], 'Login successful');
 
 } catch (\Exception $e) {
-    error_log('API login error: ' . $e->getMessage());
+    ($logger ?? Logger::fromGlobals())->error('API login error', [
+        'exception' => $e::class,
+        'message' => $e->getMessage(),
+    ]);
     ApiResponse::error(new ApiError('INTERNAL_SERVER_ERROR', 'Internal server error', 500));
 }

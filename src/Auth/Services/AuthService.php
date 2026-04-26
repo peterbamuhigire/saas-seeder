@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Auth\Services;
 
+use App\Auth\Security\AuthAuditLogger;
 use PDO;
 use App\Auth\DTO\{AuthResult, LoginDTO};
 use App\Auth\Services\{TokenService, PermissionService};
 use App\Auth\Helpers\{PasswordHelper, CookieHelper};
+use App\Observability\AuditEvent;
 use Exception;
 
 final class AuthService
@@ -20,13 +22,15 @@ final class AuthService
     private UserContextService $userContextService;
     private LoginAuthenticator $loginAuthenticator;
     private UserSessionService $userSessionService;
+    private ?AuthAuditLogger $auditLogger;
 
     public function __construct(
         PDO $db,
         TokenService $tokenService,
         PermissionService $permissionService,
         PasswordHelper $passwordHelper,
-        CookieHelper $cookieHelper
+        CookieHelper $cookieHelper,
+        ?AuthAuditLogger $auditLogger = null
     ) {
         $this->db = $db;
         $this->tokenService = $tokenService;
@@ -36,6 +40,7 @@ final class AuthService
         $this->userContextService = new UserContextService($db);
         $this->loginAuthenticator = new LoginAuthenticator($db);
         $this->userSessionService = new UserSessionService();
+        $this->auditLogger = $auditLogger;
     }
 
     public function authenticate(LoginDTO $credentials): AuthResult
@@ -46,6 +51,7 @@ final class AuthService
 
             if (!$franchiseResult) {
                 $this->logFailedAttempt($credentials);
+                $this->auditFailure(AuditEvent::AUTH_LOGIN_FAILURE, null, null, 'USER_NOT_FOUND', $credentials);
                 return new AuthResult(0, 0, $credentials->getUsername(), 'USER_NOT_FOUND', [], null);
             }
 
@@ -53,12 +59,35 @@ final class AuthService
 
             if (!$result || ($result['status'] ?? '') !== 'SUCCESS') {
                 $this->logFailedAttempt($credentials);
+                $userId = isset($result['user_id']) ? (int) $result['user_id'] : null;
+                $franchiseId = isset($franchiseResult['franchise_id']) ? (int) $franchiseResult['franchise_id'] : null;
+                $status = (string) ($result['status'] ?? 'USER_NOT_FOUND');
+                $this->auditFailure(AuditEvent::AUTH_LOGIN_FAILURE, $userId, $franchiseId, $status, $credentials);
+                if ($status === 'ACCOUNT_LOCKED') {
+                    $this->auditFailure(AuditEvent::AUTH_LOCKOUT, $userId, $franchiseId, $status, $credentials);
+                }
                 return new AuthResult(0, 0, $credentials->getUsername(), $result['status'] ?? 'USER_NOT_FOUND', [], null);
             }
 
             if (!$this->passwordHelper->verifyPassword($credentials->getPassword(), $result['stored_hash'])) {
                 $this->incrementFailedAttempts($result['user_id']);
                 $this->logFailedAttempt($credentials);
+                $this->auditFailure(
+                    AuditEvent::AUTH_LOGIN_FAILURE,
+                    (int) $result['user_id'],
+                    isset($franchiseResult['franchise_id']) ? (int) $franchiseResult['franchise_id'] : null,
+                    'INVALID_PASSWORD',
+                    $credentials
+                );
+                if ($this->isLockedOut((int) $result['user_id'])) {
+                    $this->auditFailure(
+                        AuditEvent::AUTH_LOCKOUT,
+                        (int) $result['user_id'],
+                        isset($franchiseResult['franchise_id']) ? (int) $franchiseResult['franchise_id'] : null,
+                        'ACCOUNT_LOCKED',
+                        $credentials
+                    );
+                }
                 return new AuthResult(0, 0, $credentials->getUsername(), 'INVALID_PASSWORD', [], null);
             }
 
@@ -111,6 +140,12 @@ final class AuthService
 
             // Get user permissions
             $permissions = $this->permissionService->getUserPermissions($result['user_id']);
+
+            $this->auditLogger?->log(AuditEvent::AUTH_LOGIN_SUCCESS, (int) $result['user_id'], $userData['franchise_id'] ?? null, [
+                'username' => $credentials->getUsername(),
+                'force_password_change' => (int) ($userData['force_password_change'] ?? 0),
+                'permission_count' => count($permissions),
+            ]);
 
             return new AuthResult(
                 $result['user_id'],
@@ -246,6 +281,15 @@ final class AuthService
         $stmt->execute([$userId]);
     }
 
+    private function isLockedOut(int $userId): bool
+    {
+        $stmt = $this->db->prepare('SELECT locked_until FROM tbl_users WHERE id = ? LIMIT 1');
+        $stmt->execute([$userId]);
+        $lockedUntil = $stmt->fetchColumn();
+
+        return is_string($lockedUntil) && $lockedUntil !== '';
+    }
+
     private function resetFailedAttempts(int $userId): void
     {
         $stmt = $this->db->prepare('CALL sp_reset_failed_attempts(?)');
@@ -260,6 +304,19 @@ final class AuthService
             $credentials->getIpAddress(),
             $credentials->getUserAgent(),
             date('Y-m-d H:i:s')
+        ]);
+    }
+
+    private function auditFailure(
+        string $event,
+        ?int $userId,
+        ?int $franchiseId,
+        string $status,
+        LoginDTO $credentials
+    ): void {
+        $this->auditLogger?->log($event, $userId, $franchiseId, [
+            'username' => $credentials->getUsername(),
+            'status' => $status,
         ]);
     }
 
