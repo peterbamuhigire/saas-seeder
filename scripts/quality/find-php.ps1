@@ -1,19 +1,32 @@
-$candidates = @(
-    $env:PHP_BINARY,
-    "C:\wamp64\bin\php\php8.3.28\php.exe",
-    "C:\wamp64\bin\php\php8.3.0\php.exe"
-)
-$candidates = @($candidates | Where-Object { $_ -and (Test-Path $_) })
+$ErrorActionPreference = "Stop"
 
-if ($candidates.Count -gt 0) {
-    Write-Output $candidates[0]
-    exit 0
+$candidates = [System.Collections.Generic.List[string]]::new()
+if ($env:PHP_BINARY) {
+    $candidates.Add($env:PHP_BINARY)
 }
 
-$cmd = Get-Command php -ErrorAction SilentlyContinue
-if ($cmd) {
-    Write-Output $cmd.Source
-    exit 0
+$pathCommand = Get-Command php -ErrorAction SilentlyContinue
+if ($pathCommand) {
+    $candidates.Add($pathCommand.Source)
 }
 
-throw "PHP 8.3 executable not found."
+$wampRoot = "C:\wamp64\bin\php"
+if (Test-Path -LiteralPath $wampRoot) {
+    Get-ChildItem -LiteralPath $wampRoot -Directory -Filter "php8.3*" |
+        Sort-Object Name -Descending |
+        ForEach-Object { $candidates.Add((Join-Path $_.FullName "php.exe")) }
+}
+
+foreach ($candidate in ($candidates | Select-Object -Unique)) {
+    if (-not (Test-Path -LiteralPath $candidate)) {
+        continue
+    }
+
+    $version = & $candidate -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;"
+    if ($LASTEXITCODE -eq 0 -and $version -eq "8.3") {
+        Write-Output (Resolve-Path -LiteralPath $candidate).Path
+        exit 0
+    }
+}
+
+throw "PHP 8.3 was not found. Set PHP_BINARY, add PHP to PATH, or install a WAMP PHP 8.3 runtime."

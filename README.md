@@ -29,7 +29,7 @@ composer install
 .\scripts\quality\check.ps1
 ```
 
-Create the initial super admin with `public/super-user-dev.php`, then remove or restrict that page outside development.
+Create the initial super admin with `public/super-user-dev.php`. The route is available only in a development environment from a loopback address; remove it when bootstrap is complete.
 
 ## Main Paths
 
@@ -51,7 +51,7 @@ Create the initial super admin with `public/super-user-dev.php`, then remove or 
 ## Documentation Entry Points
 
 - `docs/overview/README.md`
-- `docs/plans/april-world-class/README.md`
+- `docs/plans/repo-95/spec.md`
 - `docs/api/API-DOCUMENTATION.md`
 - `docs/data/migration-runbook.md`
 - `docs/release/release-plan.md`
@@ -68,4 +68,4 @@ Before shipping:
 
 ## License
 
-MIT
+GNU General Public License v3.0 or later (GPL-3.0-or-later). See `LICENSE`.

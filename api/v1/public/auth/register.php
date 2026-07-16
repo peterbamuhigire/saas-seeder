@@ -10,7 +10,7 @@ declare(strict_types=1);
  * Password hashing is delegated to UserService (single source of truth).
  */
 
-require_once __DIR__ . '/../../../../bootstrap.php';
+require_once __DIR__ . '/../../../bootstrap.php';
 
 use App\Auth\Services\UserService;
 use App\Config\Database;
@@ -20,6 +20,15 @@ use App\Http\Request\JsonRequest;
 use App\Http\Response\{ApiError, ApiResponse};
 
 MethodGuard::require(['POST']);
+
+$registrationEnabled = filter_var(
+    $_ENV['SELF_REGISTRATION_ENABLED'] ?? 'false',
+    FILTER_VALIDATE_BOOLEAN
+);
+if (!$registrationEnabled) {
+    ApiResponse::error(new ApiError('FEATURE_DISABLED', 'Self-registration is disabled', 403));
+}
+
 $body = JsonRequest::fromGlobals()->jsonBody();
 
 $email         = trim((string) ($body['email'] ?? ''));
@@ -64,9 +73,14 @@ if ($row = $check->fetch(PDO::FETCH_ASSOC)) {
 $hashedPassword = $userService->hashPassword($password);
 
 $verifyToken = bin2hex(random_bytes(16));
+$signupHashKey = (string) ($_ENV['SIGNUP_TOKEN_HASH_KEY'] ?? '');
+if ($signupHashKey === '') {
+    throw new RuntimeException('SIGNUP_TOKEN_HASH_KEY is required when self-registration is enabled.');
+}
+$verifyTokenHash = hash_hmac('sha256', $verifyToken, $signupHashKey);
 $stmt = $db->prepare('
     INSERT INTO tbl_api_signup_requests
-    (email, phone, franchise_name, plan_code, language, country, currency, password_hash, verify_token, verify_token_expires_at)
+    (email, phone, franchise_name, plan_code, language, country, currency, password_hash, verify_token_hash, verify_token_expires_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ');
 $stmt->execute([
@@ -78,7 +92,7 @@ $stmt->execute([
     $country !== '' ? $country : null,
     $currency !== '' ? $currency : null,
     $hashedPassword,
-    $verifyToken,
+    $verifyTokenHash,
     date('Y-m-d H:i:s', strtotime('+1 day')),
 ]);
 

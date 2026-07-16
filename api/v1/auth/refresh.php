@@ -16,7 +16,7 @@ use App\Http\Request\JsonRequest;
 use App\Http\Response\{ApiError, ApiResponse};
 use App\Observability\Logger;
 
-require_once __DIR__ . '/../../../bootstrap.php';
+require_once __DIR__ . '/../../bootstrap.php';
 
 MethodGuard::require(['POST']);
 $body = JsonRequest::fromGlobals()->jsonBody();
@@ -58,5 +58,6 @@ try {
     ]);
     $status = str_contains($e->getMessage(), 'reuse detected') ? 409 : 401;
     $code = $status === 409 ? 'AUTH_REFRESH_REUSE_DETECTED' : 'AUTH_INVALID_REFRESH_TOKEN';
-    ApiResponse::error(new ApiError($code, $e->getMessage(), $status));
+    $message = $status === 409 ? 'Refresh token reuse detected' : 'Invalid refresh token';
+    ApiResponse::error(new ApiError($code, $message, $status));
 }

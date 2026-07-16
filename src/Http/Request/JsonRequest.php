@@ -7,6 +7,9 @@ use App\Http\Response\ApiError;
 
 final class JsonRequest
 {
+    /**
+     * @param array<string, mixed> $server
+     */
     public function __construct(
         private readonly string $method,
         private readonly array $server,
@@ -28,6 +31,9 @@ final class JsonRequest
         return strtoupper($this->method);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonBody(): array
     {
         if (trim($this->rawBody) === '') {

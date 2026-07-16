@@ -57,6 +57,9 @@ final class ApiResponse
         self::error(new ApiError('INTERNAL_SERVER_ERROR', 'Internal server error', 500));
     }
 
+    /**
+     * @param array<string, mixed> $payload
+     */
     public static function send(array $payload, int $statusCode = 200): never
     {
         if (!array_key_exists('request_id', $payload)) {

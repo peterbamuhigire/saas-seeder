@@ -1,5 +1,7 @@
 # Final Audit
 
+> Historical April record. Its repository-readiness conclusion is superseded by `docs/plans/repo-95/baseline-audit.md` and the reproduced verification in `docs/plans/repo-95/verification.md`.
+
 ## Summary
 
 The repository now has the phase 11 observability and operations layer plus the phase 12 certification bundle. Runtime request correlation is explicit, auth and module audit coverage is materially stronger, and the release path now has checklists, rollback posture, and evidence templates.

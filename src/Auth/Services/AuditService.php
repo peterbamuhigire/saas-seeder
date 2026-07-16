@@ -29,7 +29,7 @@ final class AuditService
      * @param int|null $franchiseId Franchise scope (null for system-wide)
      * @param string   $entityType Entity affected (e.g., 'user', 'role', 'franchise')
      * @param int|null $entityId   ID of affected entity
-     * @param array    $details    Additional context (stored as JSON)
+     * @param array<string, mixed> $details Additional context (stored as JSON)
      */
     public function log(
         string $action,

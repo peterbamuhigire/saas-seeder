@@ -26,6 +26,9 @@ final class BearerAuth
         return $token;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public static function requireClaims(string $tokenType = 'access', ?JsonRequest $request = null): array
     {
         if ($tokenType !== 'access') {

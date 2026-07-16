@@ -11,7 +11,7 @@ declare(strict_types=1);
  * the web sign-in flow — single source of truth for authentication.
  */
 
-require_once __DIR__ . '/../../../bootstrap.php';
+require_once __DIR__ . '/../../bootstrap.php';
 
 use App\Auth\DTO\LoginDTO;
 use App\Auth\Helpers\{CookieHelper, PasswordHelper};
@@ -65,15 +65,7 @@ try {
     $result = $authService->authenticate($loginDTO);
 
     if ($result->getStatus() !== 'SUCCESS') {
-        $statusCodes = [
-            'USER_NOT_FOUND'    => 401,
-            'INVALID_PASSWORD'  => 401,
-            'ACCOUNT_LOCKED'    => 423,
-            'ACCOUNT_INACTIVE'  => 403,
-            'ACCOUNT_SUSPENDED' => 403,
-        ];
-        $httpCode = $statusCodes[$result->getStatus()] ?? 401;
-        ApiResponse::error(new ApiError('AUTH_INVALID_CREDENTIALS', 'Invalid credentials', $httpCode));
+        ApiResponse::error(new ApiError('AUTH_INVALID_CREDENTIALS', 'Invalid credentials', 401));
     }
 
     $userData = $result->getUserData();

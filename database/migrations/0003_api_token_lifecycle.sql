@@ -5,9 +5,36 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-ALTER TABLE `tbl_user_sessions`
-  ADD COLUMN `jti` CHAR(32) NULL AFTER `token`,
-  ADD COLUMN `token_hash` CHAR(64) NULL AFTER `jti`;
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sp_migrate_0003_token_columns`$$
+CREATE PROCEDURE `sp_migrate_0003_token_columns`()
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tbl_user_sessions'
+      AND COLUMN_NAME = 'jti'
+  ) THEN
+    ALTER TABLE `tbl_user_sessions`
+      ADD COLUMN `jti` CHAR(32) NULL AFTER `token`;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tbl_user_sessions'
+      AND COLUMN_NAME = 'token_hash'
+  ) THEN
+    ALTER TABLE `tbl_user_sessions`
+      ADD COLUMN `token_hash` CHAR(64) NULL AFTER `jti`;
+  END IF;
+END$$
+
+CALL `sp_migrate_0003_token_columns`()$$
+DROP PROCEDURE `sp_migrate_0003_token_columns`$$
+
+DELIMITER ;
 
 UPDATE `tbl_user_sessions`
 SET `jti` = JSON_UNQUOTE(JSON_EXTRACT(`session_data`, '$.jti'))
@@ -39,10 +66,43 @@ ALTER TABLE `tbl_user_sessions`
   MODIFY COLUMN `ip_address` VARCHAR(45) NULL,
   MODIFY COLUMN `user_agent` VARCHAR(255) NULL;
 
-ALTER TABLE `tbl_user_sessions`
-  DROP INDEX `uk_token`,
-  ADD UNIQUE KEY `uk_session_jti` (`jti`),
-  ADD KEY `idx_session_token_hash` (`token_hash`);
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS `sp_migrate_0003_token_indexes`$$
+CREATE PROCEDURE `sp_migrate_0003_token_indexes`()
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tbl_user_sessions'
+      AND INDEX_NAME = 'uk_token'
+  ) THEN
+    ALTER TABLE `tbl_user_sessions` DROP INDEX `uk_token`;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tbl_user_sessions'
+      AND INDEX_NAME = 'uk_session_jti'
+  ) THEN
+    ALTER TABLE `tbl_user_sessions` ADD UNIQUE KEY `uk_session_jti` (`jti`);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'tbl_user_sessions'
+      AND INDEX_NAME = 'idx_session_token_hash'
+  ) THEN
+    ALTER TABLE `tbl_user_sessions` ADD KEY `idx_session_token_hash` (`token_hash`);
+  END IF;
+END$$
+
+CALL `sp_migrate_0003_token_indexes`()$$
+DROP PROCEDURE `sp_migrate_0003_token_indexes`$$
+
+DELIMITER ;
 
 CREATE TABLE IF NOT EXISTS `tbl_refresh_tokens` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

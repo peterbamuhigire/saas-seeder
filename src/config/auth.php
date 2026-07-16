@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // Auth configuration for SaaS Seeder Template
-require_once dirname(__FILE__) . '/database.php';
+require_once __DIR__ . '/Database.php';
 require_once dirname(__FILE__) . '/autoloader.php';
 require_once dirname(__FILE__) . '/session.php';
 
@@ -197,6 +197,9 @@ if (isLoggedIn()) {
 /**
  * Log an auditable action to tbl_audit_log.
  * Silently fails if audit table is missing (defensive).
+ */
+/**
+ * @param array<string, mixed> $details
  */
 function auditLog(string $action, string $entityType = '', ?int $entityId = null, array $details = []): void
 {

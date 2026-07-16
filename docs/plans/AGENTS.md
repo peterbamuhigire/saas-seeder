@@ -7,11 +7,20 @@
 - **Owner:** planning owner for spec-driven work and roadmap status.
 - **Update trigger:** update this file when the active roadmap changes, plan status changes, phase dependencies change, or plan folder policy changes.
 
-## Current Roadmap
+## Current Certification
 
-`docs/plans/april-world-class/README.md` is the active April World-Class remediation roadmap as of 2026-04-26. Implementation work should reference the relevant April phase and must not treat older plans as competing active roadmaps.
+`docs/plans/repo-95/final-scorecard.md` is the current evidence-backed repository certification as of 2026-07-16.
 
-## Active Plans
+## Completed Plans
+
+### Repository 95 Remediation (2026-07-16)
+
+**Goal:** Move the evidence-backed repository score from 55/100 to at least 95/100 without changing rubric weights.
+**Spec:** [repo-95/spec.md](repo-95/spec.md)
+**Baseline:** [repo-95/baseline-audit.md](repo-95/baseline-audit.md)
+**Final scorecard:** [repo-95/final-scorecard.md](repo-95/final-scorecard.md)
+**Verification:** [repo-95/verification.md](repo-95/verification.md)
+**Status:** completed at 95/100
 
 ### April World-Class Remediation (2026-04-26)
 
@@ -55,10 +64,9 @@
 
 **Evaluation source:** [docs/29-march-evaluation/](../29-march-evaluation/)
 
-## Completed Plans
-
 | Date | Plan |
 |------|------|
+| 2026-04-26 | [April World-Class Remediation](april-world-class/README.md) |
 | 2026-03-29 | [Template Standards Compliance](2026-03-29-template-standards-compliance.md) |
 | 2026-02-24 | [Auth Single Source of Truth - Design](2026-02-24-auth-single-source-of-truth-design.md) |
 | 2026-02-24 | [Auth Single Source of Truth - Implementation](2026-02-24-auth-single-source-of-truth-impl.md) |

@@ -9,9 +9,13 @@ final class ApiError extends RuntimeException
 {
     private string $errorCode;
     private int $statusCode;
+    /** @var array<string, mixed> */
     private array $details;
     private ?string $documentationUrl;
 
+    /**
+     * @param array<string, mixed> $details
+     */
     public function __construct(
         string $errorCode,
         string $message,
@@ -31,6 +35,9 @@ final class ApiError extends RuntimeException
         return new self('REQUEST_MALFORMED_JSON', $message, 400);
     }
 
+    /**
+     * @param list<string> $allowedMethods
+     */
     public static function methodNotAllowed(array $allowedMethods): self
     {
         return new self(
@@ -56,6 +63,9 @@ final class ApiError extends RuntimeException
         return $this->statusCode;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function details(): array
     {
         return $this->details;

@@ -17,7 +17,7 @@ final class SecurityHeaderPolicy
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
             'Cache-Control' => 'no-store',
             'Permissions-Policy' => 'geolocation=(), microphone=(), camera=()',
-            'Content-Security-Policy-Report-Only' => (new CspPolicy())->reportOnlyHeader(),
+            'Content-Security-Policy' => (new CspPolicy())->enforcedHeader(),
         ];
 
         if ($appEnv === 'production') {

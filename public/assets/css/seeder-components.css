@@ -14,7 +14,93 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-#main-body:focus {
+#main-body:focus,
+:focus-visible {
   outline: 3px solid var(--seeder-focus);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+.seeder-skip-link {
+  z-index: 9999;
+}
+
+.seeder-account-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.navbar .nav-link,
+.navbar .dropdown-item,
+.navbar-toggler {
+  min-height: 44px;
+}
+
+.landing-hero {
+  display: grid;
+  min-height: 60vh;
+  place-items: center;
+  padding: clamp(2rem, 6vw, 5rem) 0;
+  color: #fff;
+  background:
+    linear-gradient(145deg, rgb(8 19 31 / 94%), rgb(16 35 52 / 88%)),
+    radial-gradient(circle at 15% 20%, rgb(228 155 33 / 34%), transparent 38%);
+}
+
+.landing-card {
+  width: min(100%, 42rem);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  color: var(--seeder-text);
+  background: var(--seeder-surface);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-top: 6px solid var(--seeder-accent);
+  border-radius: 0.9rem;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 24%);
+  text-align: left;
+}
+
+.landing-card h1 {
+  font-size: clamp(2.25rem, 1.466rem + 4.6vw, 4.2rem);
+  font-weight: 780;
+  line-height: 1;
+}
+
+.big-button {
+  min-height: 52px;
+  padding: 0.85rem 1.25rem;
+  border-radius: 0.55rem;
+  box-shadow: 0 4px 0 var(--seeder-accent);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.big-button:hover {
+  transform: translateY(1px);
+  box-shadow: 0 3px 0 var(--seeder-accent);
+}
+
+.role-badge {
+  display: inline-block;
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.7rem;
+  color: #315066;
+  background: #e4eaee;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.super-admin-badge {
+  color: #513100;
+  background: #f7d898;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
 }

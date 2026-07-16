@@ -7,13 +7,19 @@ final class Env
 {
     public static function get(string $key, ?string $default = null): ?string
     {
-        $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+        if (array_key_exists($key, $_ENV)) {
+            $value = $_ENV[$key];
+        } elseif (array_key_exists($key, $_SERVER)) {
+            $value = $_SERVER[$key];
+        } else {
+            $value = getenv($key);
+        }
 
-        if ($value === false || $value === null || $value === '') {
+        if (!is_string($value) || $value === '') {
             return $default;
         }
 
-        return (string) $value;
+        return $value;
     }
 
     public static function require(string $key): string

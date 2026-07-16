@@ -15,7 +15,7 @@ use App\Http\RateLimit\RateLimitPolicy;
 use App\Http\Request\JsonRequest;
 use App\Http\Response\{ApiError, ApiResponse};
 
-require_once __DIR__ . '/../../../bootstrap.php';
+require_once __DIR__ . '/../../bootstrap.php';
 
 MethodGuard::require(['POST']);
 $body = JsonRequest::fromGlobals()->jsonBody();

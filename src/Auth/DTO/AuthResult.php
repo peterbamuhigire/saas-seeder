@@ -65,6 +65,8 @@ final readonly class AuthResult
 
     /**
      * Get user data array
+     *
+     * @return array<string, mixed>
      */
     public function getUserData(): array
     {
@@ -89,6 +91,8 @@ final readonly class AuthResult
 
     /**
      * Convert to array representation
+     *
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {

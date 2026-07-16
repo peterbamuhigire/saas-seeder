@@ -1,5 +1,7 @@
 # Final Certification Evidence
 
+> Historical certification bundle. The current release evidence is `docs/plans/repo-95/verification.md`; the April bundle did not include live schema or browser verification.
+
 ## Certification Date
 
 2026-04-26

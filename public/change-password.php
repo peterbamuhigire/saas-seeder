@@ -1,263 +1,119 @@
 <?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../src/config/autoloader.php';
 require_once __DIR__ . '/../src/config/auth.php';
 require_once __DIR__ . '/includes/security-headers.php';
-require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Auth\Helpers\{PasswordHelper, CSRFHelper};
+use App\Auth\Helpers\CSRFHelper;
+use App\Auth\Helpers\PasswordHelper;
 use App\Auth\Services\AuditService;
 use App\Config\Database;
+use App\Helpers\UiHelper;
 use App\Observability\AuditEvent;
-use Dotenv\Dotenv;
-
-$dotenv = Dotenv::createImmutable(__DIR__ . '/..');
-$dotenv->safeLoad();
 
 requireAuth();
 
 $csrfHelper = new CSRFHelper();
-$csrfToken  = $csrfHelper->generateToken();
-$loginBackground = \App\Helpers\UiHelper::getRandomLoginBackground();
-
-$error   = '';
+$csrfToken = $csrfHelper->generateToken();
+$loginBackground = UiHelper::getRandomLoginBackground();
+$error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $csrfHelper->validateToken($_POST['csrf_token'] ?? '');
 
-        $currentPassword = $_POST['current_password'] ?? '';
-        $newPassword      = $_POST['new_password'] ?? '';
+        $currentPassword = (string) ($_POST['current_password'] ?? '');
+        $newPassword = (string) ($_POST['new_password'] ?? '');
 
-        if (empty($currentPassword) || empty($newPassword)) {
-            throw new \Exception('All fields are required.');
+        if ($currentPassword === '' || $newPassword === '') {
+            $error = 'Enter both your current password and a new password.';
+        } else {
+            $passwordHelper = new PasswordHelper();
+            $validationErrors = $passwordHelper->validatePasswordStrength($newPassword);
+
+            if ($validationErrors !== []) {
+                $error = implode(' ', $validationErrors);
+            } else {
+                $db = Database::getInstance()->getConnection();
+                $userId = (int) getSession('user_id');
+                $statement = $db->prepare('SELECT password_hash FROM tbl_users WHERE id = ? LIMIT 1');
+                $statement->execute([$userId]);
+                $row = $statement->fetch(PDO::FETCH_ASSOC);
+
+                if (!$row || !$passwordHelper->verifyPassword($currentPassword, (string) $row['password_hash'])) {
+                    $error = 'The current password is incorrect.';
+                } else {
+                    $statement = $db->prepare('UPDATE tbl_users SET password_hash = ?, force_password_change = 0, updated_at = NOW() WHERE id = ?');
+                    $statement->execute([$passwordHelper->hashPassword($newPassword), $userId]);
+
+                    (new AuditService($db))->log(
+                        AuditEvent::AUTH_PASSWORD_CHANGED,
+                        $userId,
+                        (int) (getSession('franchise_id') ?? 0) ?: null,
+                        'user',
+                        $userId,
+                        ['force_password_change_cleared' => true]
+                    );
+
+                    setSession('force_password_change', 0);
+                    $success = 'Password changed. You can continue to your workspace.';
+                }
+            }
         }
-
-        $passwordHelper = new PasswordHelper();
-
-        $errors = $passwordHelper->validatePasswordStrength($newPassword);
-        if (!empty($errors)) {
-            throw new \Exception(implode(' ', $errors));
-        }
-
-        $db     = Database::getInstance()->getConnection();
-        $userId = (int) getSession('user_id');
-
-        // Verify current password
-        $stmt = $db->prepare("SELECT password_hash FROM tbl_users WHERE id = ? LIMIT 1");
-        $stmt->execute([$userId]);
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        if (!$row || !$passwordHelper->verifyPassword($currentPassword, $row['password_hash'])) {
-            throw new \Exception('Current password is incorrect.');
-        }
-
-        // Hash new password via PasswordHelper (single source of truth)
-        $newHash = $passwordHelper->hashPassword($newPassword);
-
-        $stmt = $db->prepare(
-            "UPDATE tbl_users SET password_hash = ?, force_password_change = 0, updated_at = NOW() WHERE id = ?"
-        );
-        $stmt->execute([$newHash, $userId]);
-
-        $audit = new AuditService($db);
-        $audit->log(AuditEvent::AUTH_PASSWORD_CHANGED, $userId, (int) (getSession('franchise_id') ?? 0) ?: null, 'user', $userId, [
-            'force_password_change_cleared' => true,
-        ]);
-
-        // Clear the force_password_change session flag
-        setSession('force_password_change', 0);
-
-        $success = 'Password changed successfully.';
-
-        // Redirect to dashboard after a moment
-        header('refresh:2;url=./index.php');
-
-    } catch (\Exception $e) {
-        $error = $e->getMessage();
+    } catch (Throwable $exception) {
+        $error = 'The password could not be changed. Try again.';
+        error_log('Password change failed: ' . $exception->getMessage());
     }
 }
 
-$pageTitle = 'Change Password';
+$pageTitle = 'Change password';
+$pageEyebrow = 'Account security';
+$pageHeading = 'Choose a new password.';
+$pageDescription = 'Use at least 12 characters and combine uppercase, lowercase, numbers, and symbols.';
+$storyEyebrow = 'Credential hygiene';
+$storyHeading = 'Make the next secret stronger.';
+$storyDescription = 'Passwords are validated at the edge, hashed with Argon2id, and never written to application logs.';
+
+require __DIR__ . '/includes/auth-page-start.php';
 ?>
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title><?php echo htmlspecialchars($pageTitle); ?> - SaaS Seeder</title>
-  <link href="./assets/tabler/css/tabler.min.css" rel="stylesheet">
-  <link href="/assets/vendor/sweetalert2/sweetalert2.min.css" rel="stylesheet">
-  <style>
-    @import url("https://rsms.me/inter/inter.css");
-    .auth-split { min-height: 100vh; display: flex; }
-    .auth-left {
-      flex: 0 0 45%;
-      <?php if ($loginBackground !== ''): ?>
-      background-image: url('<?php echo htmlspecialchars($loginBackground); ?>');
-      background-size: cover;
-      background-position: center;
-      <?php else: ?>
-      background: linear-gradient(160deg, #1a1f36 0%, #0d1117 100%);
-      <?php endif; ?>
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 3rem;
-    }
-    .auth-left::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.4) 100%);
-    }
-    .auth-left > * { position: relative; z-index: 1; }
-    .auth-left-logo { font-size: 1.6rem; font-weight: 800; color: #fff; text-decoration: none; }
-    .auth-left-tagline { color: rgba(255,255,255,0.92); }
-    .auth-left-tagline h3 { font-size: 1.8rem; font-weight: 700; margin-bottom: .5rem; }
-    .auth-left-tagline p { font-size: .95rem; opacity: .75; max-width: 340px; }
-    .auth-left-footer { font-size: .8rem; color: rgba(255,255,255,.45); }
-    .auth-right { flex: 1; display: flex; align-items: center; justify-content: center; background: #fff; padding: 2rem 1.5rem; }
-    .auth-form-wrap { width: 100%; max-width: 420px; }
-    .form-control { border-radius: 8px; border: 1.5px solid #e5e7eb; height: 50px; }
-    .form-control:focus { border-color: var(--tblr-primary); box-shadow: 0 0 0 3px rgba(6,111,209,.1); }
-    .btn-submit { height: 50px; font-size: 1rem; font-weight: 600; border-radius: 8px; }
-    @media (max-width: 991.98px) { .auth-left { display: none; } .auth-right { background: #f9fafb; } }
-  </style>
-</head>
-<body>
-<script src="/assets/vendor/sweetalert2/sweetalert2.min.js"></script>
+<?php if ($error !== ''): ?>
+    <div class="alert alert--error" role="alert" aria-live="polite"><?= authEscape($error) ?></div>
+<?php endif; ?>
+<?php if ($success !== ''): ?>
+    <div class="alert alert--success" role="status" aria-live="polite"><?= authEscape($success) ?></div>
+    <a class="button button--full" href="/index.php">Continue to workspace</a>
+<?php else: ?>
+    <form action="/change-password.php" method="post">
+        <input type="hidden" name="csrf_token" value="<?= authEscape($csrfToken) ?>">
 
-<div class="auth-split">
-  <!-- Left panel -->
-  <div class="auth-left d-none d-lg-flex flex-column">
-    <a href="." class="auth-left-logo"><img src="/assets/images/branding/logo-light.png" alt="Logo" style="max-height:75px;width:auto"></a>
-    <div class="auth-left-tagline">
-      <h3>Secure Your Account</h3>
-      <p>Choose a strong password with uppercase, lowercase, numbers, and special characters.</p>
-    </div>
-    <small class="auth-left-footer">&copy; <?php echo date('Y'); ?> Chwezi Core Systems</small>
-  </div>
-
-  <!-- Right panel -->
-  <div class="auth-right">
-    <div class="auth-form-wrap">
-      <div class="d-lg-none text-center mb-4">
-        <span style="font-size:1.4rem;font-weight:800;color:var(--tblr-primary);">SaaS Seeder</span>
-      </div>
-
-      <h2 class="mb-1 fw-bold">Change Password</h2>
-      <p class="text-muted mb-4">
-        <?php if ((getSession('force_password_change') ?? 0) == 1): ?>
-          You must change your password before continuing.
-        <?php else: ?>
-          Update your account password below.
-        <?php endif; ?>
-      </p>
-
-      <?php if (!empty($error)): ?>
-        <div class="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3" role="alert" aria-live="polite" style="border-radius:8px;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          <?php echo htmlspecialchars($error); ?>
-        </div>
-      <?php endif; ?>
-
-      <?php if (!empty($success)): ?>
-        <div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3" role="alert" aria-live="polite" style="border-radius:8px;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-          <?php echo htmlspecialchars($success); ?> Redirecting...
-        </div>
-      <?php endif; ?>
-
-      <form method="POST" action="./change-password.php">
-        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken); ?>">
-
-        <div class="mb-3">
-          <label for="current_password" class="form-label fw-medium">Current Password</label>
-          <div class="input-group input-group-flat">
-            <input type="password" name="current_password" id="current_password" class="form-control" autocomplete="current-password" required aria-required="true">
-            <span class="input-group-text">
-              <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="current_password" aria-label="Toggle password visibility">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
-              </button>
-            </span>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label for="new_password" class="form-label fw-medium">New Password</label>
-          <div class="input-group input-group-flat">
-            <input type="password" name="new_password" id="new_password" class="form-control" autocomplete="new-password" required aria-required="true">
-            <span class="input-group-text">
-              <button type="button" class="btn btn-link text-muted p-0 toggle-pw" data-target="new_password" aria-label="Toggle password visibility">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0-4 0"/><path d="M21 12c-2.4 4-5.4 6-9 6c-3.6 0-6.6-2-9-6c2.4-4 5.4-6 9-6c3.6 0 6.6 2 9 6"/></svg>
-              </button>
-            </span>
-          </div>
-          <div id="pw-strength" class="mt-2" style="display:none;">
-            <div class="progress" style="height:4px;">
-              <div id="pw-strength-bar" class="progress-bar" role="progressbar" style="width:0%"></div>
+        <div class="field">
+            <label for="current_password">Current password</label>
+            <div class="field__control">
+                <input id="current_password" name="current_password" type="password" autocomplete="current-password" required data-password-input>
+                <button class="password-toggle" type="button" data-password-toggle="current_password" aria-controls="current_password" aria-pressed="false">Show</button>
             </div>
-            <small id="pw-strength-text" class="text-muted"></small>
-          </div>
         </div>
 
-        <div class="d-grid">
-          <button type="submit" class="btn btn-primary btn-submit">Change Password</button>
+        <div class="field">
+            <label for="new_password">New password</label>
+            <div class="field__control">
+                <input id="new_password" name="new_password" type="password" autocomplete="new-password" required data-password-input data-password-strength-input>
+                <button class="password-toggle" type="button" data-password-toggle="new_password" aria-controls="new_password" aria-pressed="false">Show</button>
+            </div>
         </div>
-      </form>
 
-      <?php if ((getSession('force_password_change') ?? 0) != 1): ?>
-        <div class="text-center mt-3">
-          <a href="./index.php" class="text-muted" style="font-size:.875rem;">Cancel</a>
+        <div class="password-strength" data-password-strength data-score="0" hidden>
+            <div class="password-strength__track" aria-hidden="true"><div class="password-strength__bar"></div></div>
+            <span class="password-strength__text" data-password-strength-text aria-live="polite"></span>
         </div>
-      <?php endif; ?>
-    </div>
-  </div>
-</div>
 
-<script src="./assets/tabler/js/tabler.min.js"></script>
-<script>
-  // Password visibility toggles
-  document.querySelectorAll('.toggle-pw').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.preventDefault();
-      const field = document.getElementById(btn.dataset.target);
-      field.type = field.type === 'password' ? 'text' : 'password';
-    });
-  });
-
-  // Password strength meter
-  const newPw = document.getElementById('new_password');
-  const strengthBar = document.getElementById('pw-strength-bar');
-  const strengthText = document.getElementById('pw-strength-text');
-  const strengthWrap = document.getElementById('pw-strength');
-
-  newPw.addEventListener('input', function() {
-    const val = this.value;
-    if (!val) { strengthWrap.style.display = 'none'; return; }
-    strengthWrap.style.display = 'block';
-
-    let score = 0;
-    if (val.length >= 8) score++;
-    if (/[A-Z]/.test(val)) score++;
-    if (/[a-z]/.test(val)) score++;
-    if (/[0-9]/.test(val)) score++;
-    if (/[!@#$%^&*()\-_=+{};:,<.>]/.test(val)) score++;
-
-    const levels = [
-      { pct: 20, cls: 'bg-danger',  label: 'Very weak' },
-      { pct: 40, cls: 'bg-warning', label: 'Weak' },
-      { pct: 60, cls: 'bg-info',    label: 'Fair' },
-      { pct: 80, cls: 'bg-primary', label: 'Strong' },
-      { pct: 100, cls: 'bg-success', label: 'Very strong' },
-    ];
-    const lvl = levels[score - 1] || levels[0];
-    strengthBar.style.width = lvl.pct + '%';
-    strengthBar.className = 'progress-bar ' + lvl.cls;
-    strengthText.textContent = lvl.label;
-  });
-
-</script>
-</body>
-</html>
+        <button class="button button--full" type="submit">Change password</button>
+    </form>
+    <?php if ((int) (getSession('force_password_change') ?? 0) !== 1): ?>
+        <div class="auth-actions"><a class="text-link" href="/index.php">Cancel</a></div>
+    <?php endif; ?>
+<?php endif; ?>
+<?php require __DIR__ . '/includes/auth-page-end.php'; ?>

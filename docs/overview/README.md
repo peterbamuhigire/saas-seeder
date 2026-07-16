@@ -4,7 +4,7 @@ This is the documentation landing page for the production-ready SaaS auth and RB
 
 ## Start Here
 
-1. Read the active roadmap: `docs/plans/april-world-class/README.md`
+1. Read the current repository scorecard and evidence: `docs/plans/repo-95/final-scorecard.md`
 2. Install dependencies and set up the database:
 
    ```powershell

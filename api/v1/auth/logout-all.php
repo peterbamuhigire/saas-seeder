@@ -14,7 +14,7 @@ use App\Http\Middleware\{BearerAuth, MethodGuard, RateLimitMiddleware};
 use App\Http\RateLimit\RateLimitPolicy;
 use App\Http\Response\{ApiError, ApiResponse};
 
-require_once __DIR__ . '/../../../bootstrap.php';
+require_once __DIR__ . '/../../bootstrap.php';
 
 MethodGuard::require(['POST']);
 $accessToken = BearerAuth::token();

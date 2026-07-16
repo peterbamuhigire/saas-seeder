@@ -1,13 +1,55 @@
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/bricolage-grotesque/bricolage-grotesque-variable.woff2") format("woff2-variations");
+  font-style: normal;
+  font-weight: 200 800;
+  font-stretch: 75% 100%;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Hanken Grotesk";
+  src: url("/assets/fonts/hanken-grotesk/hanken-grotesk-variable.woff2") format("woff2-variations");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
-  --seeder-surface: #ffffff;
-  --seeder-subtle: #f6f8fb;
-  --seeder-border: #dbe3ec;
-  --seeder-text: #182230;
-  --seeder-muted: #64748b;
-  --seeder-focus: #206bc4;
-  --seeder-radius: 8px;
+  --seeder-font-display: "Bricolage Grotesque", "Hanken Grotesk", sans-serif;
+  --seeder-font-body: "Hanken Grotesk", sans-serif;
+  --seeder-surface: #fffdf8;
+  --seeder-subtle: #f3f0e9;
+  --seeder-border: #c8d4dc;
+  --seeder-text: #08131f;
+  --seeder-muted: #4b6679;
+  --seeder-focus: #0d6fa6;
+  --seeder-accent: #e49b21;
+  --seeder-primary: #165a87;
+  --seeder-radius: 0.6rem;
   --seeder-space-1: 0.25rem;
   --seeder-space-2: 0.5rem;
   --seeder-space-3: 0.75rem;
   --seeder-space-4: 1rem;
+  --tblr-font-sans-serif: var(--seeder-font-body);
+  --tblr-body-font-family: var(--seeder-font-body);
+  --tblr-primary: var(--seeder-primary);
+  --tblr-primary-rgb: 22, 90, 135;
+  --tblr-body-color: var(--seeder-text);
+  --tblr-body-bg: var(--seeder-subtle);
+}
+
+body {
+  font-family: var(--seeder-font-body);
+}
+
+h1,
+h2,
+h3,
+.h1,
+.h2,
+.h3,
+.navbar-brand {
+  font-family: var(--seeder-font-display);
+  letter-spacing: -0.025em;
 }

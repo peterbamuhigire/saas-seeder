@@ -1,5 +1,7 @@
 # Final Scorecard
 
+> Historical self-assessment from 2026-04-26. These 99.99 ratings were not backed by live database and browser evidence and are superseded by the fixed-rubric audit in `docs/plans/repo-95/final-scorecard.md`.
+
 | Dimension | Score | Evidence |
 |---|---:|---|
 | Governance and docs integrity | 99.99 | `docs/plans/AGENTS.md`, `docs/plans/INDEX.md`, `docs/overview/README.md` |

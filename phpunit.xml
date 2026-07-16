@@ -5,14 +5,16 @@
          colors="true"
          cacheDirectory=".phpunit.cache">
     <testsuites>
-        <testsuite name="All">
-            <directory>tests</directory>
-        </testsuite>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Static">
+            <directory>tests/Accessibility</directory>
+            <directory>tests/Database</directory>
+            <directory>tests/Ui</directory>
         </testsuite>
     </testsuites>
     <source>

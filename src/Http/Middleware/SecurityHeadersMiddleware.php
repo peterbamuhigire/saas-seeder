@@ -7,9 +7,11 @@ use App\Http\Security\SecurityHeaderPolicy;
 
 final class SecurityHeadersMiddleware
 {
-    public static function apply(): void
+    public static function apply(?string $appEnv = null): void
     {
-        foreach ((new SecurityHeaderPolicy())->headers($_ENV['APP_ENV'] ?? 'development') as $name => $value) {
+        $environment = $appEnv ?? $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'development';
+
+        foreach ((new SecurityHeaderPolicy())->headers($environment) as $name => $value) {
             header($name . ': ' . $value);
         }
     }

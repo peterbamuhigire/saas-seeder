@@ -46,52 +46,6 @@ switch ($userType) {
 <html lang="en">
 <head>
    <?php include __DIR__ . "/includes/head.php"; ?>
-   <style>
-   .landing-hero {
-       min-height: 60vh;
-       display: flex;
-       align-items: center;
-       justify-content: center;
-       background: linear-gradient(135deg, var(--tblr-primary) 0%, #1a1f36 100%);
-       color: white;
-       text-align: center;
-       padding: 3rem 0;
-   }
-   .landing-card {
-       background: white;
-       border-radius: 1rem;
-       padding: 2rem;
-       box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-       color: #1f2937;
-       max-width: 600px;
-       margin: 0 auto;
-   }
-   .big-button {
-       padding: 1.5rem 3rem;
-       font-size: 1.25rem;
-       border-radius: 0.75rem;
-       font-weight: 600;
-       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-       transition: all 0.3s ease;
-   }
-   .big-button:hover {
-       transform: translateY(-2px);
-       box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-   }
-   .role-badge {
-       font-size: 0.875rem;
-       padding: 0.5rem 1rem;
-       border-radius: 2rem;
-       background: #f3f4f6;
-       color: #6b7280;
-       display: inline-block;
-       margin-bottom: 1rem;
-   }
-   .super-admin-badge {
-       background: linear-gradient(135deg, #f59e0b 0%, #dc2626 100%);
-       color: white;
-   }
-   </style>
 </head>
 <body>
     <div class="page">
@@ -100,6 +54,7 @@ switch ($userType) {
             <?php include __DIR__ . "/includes/topbar.php"; ?>
         </div>
 
+        <main id="main-body" tabindex="-1">
         <!-- Hero Section -->
         <div class="landing-hero">
             <div class="container-xl">
@@ -268,6 +223,8 @@ switch ($userType) {
                 </div>
             </div>
         </div>
+
+        </main>
 
         <footer class="footer footer-transparent d-print-none">
             <?php include __DIR__ . '/includes/footer.php'; ?>

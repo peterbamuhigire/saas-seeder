@@ -164,6 +164,9 @@ final class AuthService
 
 
 
+    /**
+     * @return array<string, mixed>
+     */
     private function getUserData(int $userId): array
     {
         try {

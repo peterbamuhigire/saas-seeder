@@ -92,12 +92,10 @@ final class PermissionService
     /**
      * Backwards-compatible hasPermission with franchise support
      *
-     * @param int $userId
-     * @param int $franchiseId
-     * @param string $permissionCode
-     * @return bool
+     * @param int|string $arg2 Permission code, or franchise ID when $arg3 is provided
+     * @param string|null $arg3 Permission code for the three-argument form
      */
-    public function hasPermission($userId, $arg2, $arg3 = null): bool
+    public function hasPermission(int $userId, int|string $arg2, ?string $arg3 = null): bool
     {
         // Support signatures: hasPermission($userId, $permissionCode) or hasPermission($userId, $franchiseId, $permissionCode)
         if ($arg3 === null && is_string($arg2)) {
@@ -181,12 +179,11 @@ final class PermissionService
      * Require a permission and throw a 403-style exception when missing.
      * This is intentionally lightweight to allow api code to catch and return 403.
      *
-     * @param int $userId
-     * @param int $franchiseId
-     * @param string $permissionCode
+     * @param int|string $arg2 Permission code, or franchise ID when $arg3 is provided
+     * @param string|null $arg3 Permission code for the three-argument form
      * @throws \Exception
      */
-    public function requirePermission($userId, $arg2, $arg3 = null): void
+    public function requirePermission(int $userId, int|string $arg2, ?string $arg3 = null): void
     {
         // Wrap hasPermission with the same flexible params, reusing the logic
         if (!$this->hasPermission($userId, $arg2, $arg3)) {
@@ -199,8 +196,7 @@ final class PermissionService
      *
      * @param int $userId
      * @param int $franchiseId
-     * @param array $permissionCodes
-     * @return bool
+     * @param list<string> $permissionCodes
      */
     public function hasAnyPermission(int $userId, int $franchiseId, array $permissionCodes): bool
     {
@@ -227,8 +223,7 @@ final class PermissionService
      *
      * @param int $userId
      * @param int $franchiseId
-     * @param array $permissionCodes
-     * @return bool
+     * @param list<string> $permissionCodes
      */
     public function hasAllPermissions(int $userId, int $franchiseId, array $permissionCodes): bool
     {
@@ -250,6 +245,9 @@ final class PermissionService
         return true;
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     public function getUserPermissions(int $userId, ?int $franchiseId = null): array
     {
         // Try using stored procedure if available
@@ -363,7 +361,9 @@ final class PermissionService
     }
 
     /**
-     * Return associative array of permission code => allowed (bool) for a user
+     * Return associative array of permission code => allowed (bool) for a user.
+     *
+     * @return array<string, bool>
      */
     public function getUserPermissionOverrides(int $userId, ?int $franchiseId = null): array
     {
@@ -455,6 +455,9 @@ final class PermissionService
         }
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     public function getRolePermissions(int $roleId): array
     {
         try {

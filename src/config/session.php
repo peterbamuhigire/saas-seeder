@@ -79,7 +79,7 @@ function unsetSession(string $key): void {
 /**
  * Get all session variables (with prefix removed from keys)
  *
- * @return array
+ * @return array<string, mixed>
  */
 function getAllSession(): array {
     $data = [];

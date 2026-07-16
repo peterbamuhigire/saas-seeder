@@ -4,11 +4,15 @@
 
 ---
 
-## Active Plans
+## Completed Plans
 
-| Date | Plan | Status | Urgency |
+| Date | Plan | Status | Evidence |
 |------|------|--------|---------|
-| 2026-04-26 | [April World-Class Remediation](april-world-class/README.md) | active | Critical |
+| 2026-07-16 | [Repository 95 Remediation](repo-95/spec.md) | completed at 95/100 | [Verification](repo-95/verification.md) |
+
+### April World-Class Remediation
+
+**Completed:** 2026-04-26. Its 99.99 self-certification is historical and is superseded by the evidence-backed Repository 95 baseline.
 
 **Sub-plans:**
 
@@ -27,12 +31,9 @@
 | 11 | [Observability, Operations, Release Evidence](april-world-class/11/phase.md) | implemented |
 | 12 | [Final Certification, Docs Sync, Score Closure](april-world-class/12/phase.md) | implemented |
 
----
-
-## Completed Plans
-
 | Date | Plan | Completion |
 |------|------|------------|
+| 2026-04-26 | [April World-Class Remediation](april-world-class/README.md) | 2026-04-26 |
 | 2026-03-29 | [Template Standards Compliance](2026-03-29-template-standards-compliance.md) | Historical/completed input to April |
 | 2026-02-24 | [Auth Single Source of Truth - Design](2026-02-24-auth-single-source-of-truth-design.md) | 2026-02-25 |
 | 2026-02-24 | [Auth Single Source of Truth - Implementation](2026-02-24-auth-single-source-of-truth-impl.md) | 2026-02-25 |

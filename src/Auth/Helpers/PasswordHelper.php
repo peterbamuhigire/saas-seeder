@@ -6,6 +6,7 @@ namespace App\Auth\Helpers;
 final class PasswordHelper
 {
     private string $pepper;
+    /** @var array{memory_cost: int, time_cost: int, threads: int} */
     private array $options;
 
     public function __construct()
@@ -67,8 +68,8 @@ final class PasswordHelper
     {
         $errors = [];
 
-        if (strlen($password) < 8) {
-            $errors[] = 'Password must be at least 8 characters';
+        if (strlen($password) < 12) {
+            $errors[] = 'Password must be at least 12 characters';
         }
 
         if (!preg_match('/[A-Z]/', $password)) {
