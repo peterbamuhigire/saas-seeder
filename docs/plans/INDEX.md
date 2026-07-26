@@ -8,6 +8,7 @@
 
 | Date | Plan | Status | Evidence |
 |------|------|--------|---------|
+| 2026-07-26 | [Demo Super-Admin Login](demo-super-admin-login/spec.md) | completed | 8 targeted tests, 128 assertions, PHP lint |
 | 2026-07-16 | [Repository 95 Remediation](repo-95/spec.md) | completed at 95/100 | [Verification](repo-95/verification.md) |
 
 ### April World-Class Remediation

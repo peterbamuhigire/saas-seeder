@@ -75,4 +75,15 @@ final class UiStaticRulesTest extends TestCase
             self::assertStringContainsString('disabled', strtolower($contents), $page);
         }
     }
+
+    public function testDemoLoginIsCsrfProtectedWithoutRenderingCredentials(): void
+    {
+        $contents = file_get_contents(dirname(__DIR__, 2) . '/public/sign-in.php');
+
+        self::assertIsString($contents);
+        self::assertStringContainsString('name="login_mode" value="demo"', $contents);
+        self::assertStringContainsString('name="csrf_token"', $contents);
+        self::assertStringContainsString('Explore the super-admin demo', $contents);
+        self::assertStringNotContainsString('DEMO_SUPER_ADMIN_PASSWORD', $contents);
+    }
 }

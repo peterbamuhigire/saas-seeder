@@ -6,6 +6,12 @@ Prioritized roadmap for SaaS Seeder Template development.
 
 ## Recently Completed
 
+### Demo Super-Admin Login (2026-07-26)
+
+Added an environment-gated, CSRF-protected demo login button that authenticates
+configured super-admin credentials through the standard authentication service.
+Production remains hard-disabled and credentials never reach the rendered page.
+
 ### Auth Single Source of Truth (2026-02-25)
 Fixed 10 auth violations: AuthResult status normalization, CSRFHelper prefix enforcement, logout token fix, duplicate session writes in sign-in.php, API login/register using PasswordHelper, access-denied.php prefix fix, PermissionService super_admin check fix.
 

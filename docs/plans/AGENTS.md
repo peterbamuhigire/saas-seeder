@@ -13,6 +13,12 @@
 
 ## Completed Plans
 
+### Demo Super-Admin Login (2026-07-26)
+
+**Goal:** Add explicitly configured, one-click demo access to the super-admin workspace without exposing credentials or bypassing the authentication service.
+**Spec:** [demo-super-admin-login/spec.md](demo-super-admin-login/spec.md)
+**Status:** completed
+
 ### Repository 95 Remediation (2026-07-16)
 
 **Goal:** Move the evidence-backed repository score from 55/100 to at least 95/100 without changing rubric weights.
