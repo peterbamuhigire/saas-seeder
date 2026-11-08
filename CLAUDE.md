@@ -691,3 +691,17 @@ The web app IS the backend for mobile apps. When building features:
 8. **Update README.md:** Change title, description, setup steps to match the project
 9. **Delete scaffolding tools:** Remove `super-user-dev.php` after creating the first admin
 10. **Configure `.env`:** Set all required secrets, `APP_URL`, `CORS_ALLOWED_ORIGINS`, `SESSION_PREFIX`
+
+## Design standard (binding)
+
+- **Standard:** Chwezi Product Excellence Standard. Adopted by Lead Developer Peter Bamuhigire and the Chwezi Core Systems design team, effective 01 November 2026 until further communication. It applies to all UI work in this repository (every screen, flow, component and release) and supersedes conflicting design guidance here from 01 November 2026.
+- **Read first** (resolve engine locations through the global engine-routing table; do not hard-code paths):
+  - design engine `chwezi-design-engine`: `doctrine/product-excellence-standard.md` (binding text) and the skill `chwezi-product-excellence-standard` (`skills/00-cross-cutting-ops-qa-a11y/`: rules catalogue, product profiles, screen blueprints, scorecard); visual tokens from `chwezi-business-app-house-style`.
+  - dev engine `chwezi-dev-engine`: `frontend-architecture/references/product-excellence-engineering-gates.md`.
+- **Product profile:** **Template**: no fixed profile. Every product scaffolded from it must declare its profile (Maduuka, Medic8, Farm Acre, Aqar, SpannaMax, Education/LMS or general business) in its own CLAUDE.md.
+- **Most relevant screen blueprints:** S01 role-aware business dashboard; S10 approvals and expense requests; S11 document and contract management.
+- **Release gate:** 13 hard gates (PX-GATE-01 to PX-GATE-13). PASS needs every applicable gate clear with MEASURED evidence, a weighted score >= 85/100 and no dimension below 2. An applicable gate left NOT_ASSESSED counts as open (BLOCKED); 70-84 with owned, dated remediation is CONDITIONAL (pilot only).
+- **Evidence required:** screenshots at compact and expanded widths, light and dark, 200% text, Arabic RTL and the longest declared language; a screen-reader and keyboard accessibility walkthrough; Core Web Vitals (LCP, INP, CLS) on a throttled mobile profile, lab data labelled as lab. An independent verifier signs every release; a human domain reviewer signs financial or clinical changes.
+- **Money:** stored as integer minor units (or exact decimal strings), never floats; displayed decimals follow the currency's ISO 4217 minor unit, so UGX and RWF show 0 decimals (`USh 45,000`, never `USh 45,000.00`).
+- **Document numbers (hard gate PX-GATE-13, rule PX-DATA-013):** contiguous per tenant per document type, allocated at issue inside the save transaction, sent as strings, provisional while offline, voided never deleted.
+- **Existing guidance in conflict:** `docs/design-system/` (Tabler primitives) is superseded where it conflicts. This section propagates into scaffolded projects.
